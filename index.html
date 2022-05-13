@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Card Sort</title>
+    <style>
+      /* Reset */
+      body, html {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div>Enter card texts one per line or separated by commas</div>
+    <div>
+      <textarea class="card-text-input"></textarea>
+    </div>
+    <div>Enter category names one per line or separated by commas (optional)</div>
+    <div>
+      <textarea class="category-name-input"></textarea>
+    </div>
+    <div>
+      <label>
+        <input class="category-editing-checkbox" type="checkbox" checked />
+        <span>Allow category editing</span>
+      </label>
+    </div>
+    <div>
+      <button class="btn-create-link">Create a link for card sorting</button>
+    </div>
+    <div class="link-container"></div>
+    <script src="pako-2.0.4.min.js"></script>
+    <script src="common-scripts.js"></script>
+    <script>
+      const cardTextInput = document.querySelector('.card-text-input');
+      const categoryNameInput = document.querySelector('.category-name-input');
+      const categoryEditingCheckbox = document.querySelector('.category-editing-checkbox');
+      const linkContainer = document.querySelector('.link-container');
+      const buttonCreateLink = document.querySelector('.btn-create-link');
+
+      buttonCreateLink.addEventListener('click', createLink);
+
+      async function createLink() {
+        const cardTexts = textToArray(cardTextInput.value);
+        const categoryNames = textToArray(categoryNameInput.value);
+        const data = {};
+        for (const categoryName of categoryNames) {
+          data[categoryName] = [];
+        }
+        data[uncategorizedKey] = cardTexts;
+        const settings = {};
+        settings.allowCategoryEditing = categoryEditingCheckbox.checked;
+        data[settingsFlagsKey] = saveSettings(settings);
+        const dataString = await saveToString(data);
+        const baseUrl = window.location.href.replace(regexRemoveBasenameFromUrl, '/');
+        const url = baseUrl + 'card-sort.html#' + dataString;
+        linkContainer.innerHTML = `<a href="${url}">${url}</a>`;
+      }
+
+      function textToArray(text) {
+        let resultArray;
+        if (text.includes('\n')) {
+          resultArray = text.split('\n');
+        }
+        else {
+          resultArray = text.split(',');
+        }
+        resultArray = resultArray.map(item => item.trim());
+        return resultArray;
+      }
+    </script>
+  </body>
+</html>
