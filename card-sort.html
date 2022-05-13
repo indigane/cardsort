@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Card Sort</title>
+    <title>Card Sorting</title>
     <style>
       /* Reset */
       body, html {
@@ -73,9 +73,7 @@
       }
       /* Uncategorized cards */
       .uncategorized-cards {
-        /* padding: 5px; */
         border-radius: 5px;
-        /* box-shadow: 0 2px 5px rgba(0, 0, 0, .5); */
         width: 200px;
         max-width: calc(50vw - 35px);
       }
@@ -119,8 +117,6 @@
         font-size: 20px;
         color: inherit;
       }
-      .category-cards {
-      }
       .category-cards .grid {
         min-height: 100px;
       }
@@ -128,7 +124,7 @@
         width: 100%;
       }
       .category-controls {
-        margin-top: 5px;
+        margin-bottom: 5px;
       }
       .category-drag-handle {
         width: 100%;
@@ -165,12 +161,12 @@
       <div class="item">
         <div class="item-content">
           <div class="category">
+            <div class="category-controls">
+              <div class="category-drag-handle"></div>
+            </div>
             <input class="title" placeholder="Type a name" />
             <div class="category-cards">
               <div class="grid"></div>
-            </div>
-            <div class="category-controls">
-              <div class="category-drag-handle"></div>
             </div>
           </div>
         </div>
@@ -181,9 +177,7 @@
     <script src="common-scripts.js"></script>
     <script>
       let data = {};
-      const settings = {
-        allowCategoryEditing: true,
-      };
+      const settings = Object.assign({}, settingsDefaults);
 
       /* Card sorting */
       const buttonCreateCategory = document.querySelector('.btn-create-category');
@@ -215,10 +209,17 @@
 
       async function initialize() {
         if ( ! window.location.hash) {
-          window.location.href = 'index.html';
-          return;
+          if (window.location.search) {
+            data = loadFromQueryParameters();
+          }
+          else {
+            window.location.href = 'index.html';
+            return;
+          }
         }
-        data = await loadFromString(window.location.hash.split('#').pop());
+        else {
+          data = await loadFromString(window.location.hash.split('#').pop());
+        }
         const cardTexts = data[uncategorizedKey];
         Object.assign(settings, loadSettings(data));
         if (settings.allowCategoryEditing === false) {
@@ -274,7 +275,8 @@
         }
         categoriesGrid.show(
           categoriesGrid.add([itemElement], {
-            active: false
+            active: false,
+            index: !!name ? -1 : 0,
           }),
           {
             onFinish: () => {

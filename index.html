@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Card Sort</title>
+    <title>Card Sorting</title>
     <style>
       /* Reset */
       body, html {
@@ -14,27 +14,68 @@
       * {
         box-sizing: border-box;
       }
+      .main-layout {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 2em;
+      }
+      .main-layout > div {
+        width: 100%;
+        max-width: 600px;
+        margin-bottom: 1em;
+        font-size: 24px;
+      }
+      textarea {
+        padding: 0.5em;
+        margin-bottom: 1em;
+        width: 100%;
+        height: 20vh;
+      }
+      label {
+        cursor: pointer;
+      }
+      button {
+        margin-top: 1em;
+        margin-bottom: 1em;
+        padding: 0.3em 0.5em;
+        font-size: 24px;
+        cursor: pointer;
+      }
+      input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+      }
+      .link-container {
+        word-break: break-all;
+        padding-bottom: 2em;
+      }
     </style>
   </head>
   <body>
-    <div>Enter card texts one per line or separated by commas</div>
-    <div>
-      <textarea class="card-text-input"></textarea>
-    </div>
-    <div>Enter category names one per line or separated by commas (optional)</div>
-    <div>
-      <textarea class="category-name-input"></textarea>
-    </div>
-    <div>
-      <label>
-        <input class="category-editing-checkbox" type="checkbox" checked />
-        <span>Allow category editing</span>
-      </label>
-    </div>
-    <div>
+    <div class="main-layout">
+      <h1>
+        <span>Card Sorting</span>
+        <span>&bull;</span>
+        <a href="https://github.com/indigane/cardsort/">Readme</a>
+      </h1>
+      <div>Enter card texts one per line or separated by commas</div>
+      <div>
+        <textarea class="card-text-input"></textarea>
+      </div>
+      <div>Enter category names one per line or separated by commas (optional)</div>
+      <div>
+        <textarea class="category-name-input"></textarea>
+      </div>
+      <div>
+        <label>
+          <input class="category-editing-checkbox" type="checkbox" checked />
+          <span>Allow category editing</span>
+        </label>
+      </div>
       <button class="btn-create-link">Create a link for card sorting</button>
+      <div class="link-container"></div>
     </div>
-    <div class="link-container"></div>
     <script src="pako-2.0.4.min.js"></script>
     <script src="common-scripts.js"></script>
     <script>
@@ -72,6 +113,7 @@
           resultArray = text.split(',');
         }
         resultArray = resultArray.map(item => item.trim());
+        resultArray = resultArray.filter(item => !!item);
         return resultArray;
       }
     </script>
