@@ -60,16 +60,15 @@
       }
       /* Toolbar */
       .toolbar {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        grid-template-rows: 1fr;
-        gap: 10px 10px;
+        display: flex;
+        padding: 5px;
         align-items: center;
-        justify-items: center;
+        justify-content: space-around;
       }
       .toolbar button {
         font-size: 24px;
         cursor: pointer;
+        margin: 5px;
       }
       /* Uncategorized cards */
       .uncategorized-cards {
@@ -223,7 +222,9 @@
         const cardTexts = data[uncategorizedKey];
         Object.assign(settings, loadSettings(data));
         if (settings.allowCategoryEditing === false) {
+          buttonCreateCategory.style.display = 'none';
           categoryTemplate.content.querySelector('.title').disabled = true;
+          categoryTemplate.content.querySelector('.title').removeAttribute('placeholder');
         }
         buttonCreateCategory.addEventListener('click', () => createCategory());
         for (const text of cardTexts) {
@@ -272,6 +273,12 @@
         });
         if (name) {
           titleInput.value = name;
+        }
+        else if (settings.allowCategoryEditing === false) {
+          titleInput.style.opacity = '0';
+          titleInput.style.height = '0';
+          titleInput.style.margin = '0';
+          titleInput.style.padding = '0';
         }
         categoriesGrid.show(
           categoriesGrid.add([itemElement], {
