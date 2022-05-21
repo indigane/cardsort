@@ -200,7 +200,7 @@
         dragEnabled: true,
         dragSort: true,
         dragHandle: '.category-drag-handle',
-      });
+      }).on('layoutEnd', () => categoriesGrid.synchronize());
       const cardGrids = [uncategorizedCardsGrid];
 
       const debouncedUpdateData = debounce(updateData, 500);
@@ -314,9 +314,17 @@
       }
 
       function updateData() {
+        let untitledCounter = 0;
         data = {};
         for (const categoryElement of document.querySelectorAll('.category')) {
-          const categoryName = categoryElement.querySelector('.title').value;
+          let categoryName = categoryElement.querySelector('.title').value;
+          if ( ! categoryName) {
+            untitledCounter += 1;
+            categoryName = `(Untitled ${untitledCounter})`;
+          }
+          if (categoryName in data) {
+            categoryName = getUniqueCategoryName(categoryName, data);
+          }
           data[categoryName] = [];
           for (const cardElement of categoryElement.querySelectorAll('.card')) {
             data[categoryName].push(cardElement.textContent);
@@ -327,6 +335,16 @@
           data[uncategorizedKey].push(cardElement.textContent);
         }
         data[settingsFlagsKey] = saveSettings(settings);
+      }
+
+      function getUniqueCategoryName(originalName, data) {
+        let candidateName = originalName
+        let counter = 1;
+        while (candidateName in data) {
+          counter += 1;
+          candidateName = `${originalName} (${counter})`;
+        }
+        return candidateName;
       }
 
       async function shareResult() {

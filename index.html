@@ -106,7 +106,7 @@
 
       function textToArray(text) {
         let resultArray;
-        if (text.includes('\n')) {
+        if (text.trim().includes('\n')) {
           resultArray = text.split('\n');
         }
         else {
