@@ -28,7 +28,6 @@
       }
       textarea {
         padding: 0.5em;
-        margin-bottom: 1em;
         width: 100%;
         height: 20vh;
       }
@@ -50,6 +49,9 @@
         word-break: break-all;
         padding-bottom: 2em;
       }
+      hr {
+        opacity: .3;
+      }
     </style>
   </head>
   <body>
@@ -62,6 +64,15 @@
       <div>Enter card texts one per line or separated by commas</div>
       <div>
         <textarea class="card-text-input"></textarea>
+      </div>
+      <div>
+        <label>
+          <input class="is-randomized-checkbox" type="checkbox" />
+          <span>Randomize card order for each participant</span>
+        </label>
+      </div>
+      <div>
+        <hr />
       </div>
       <div>Enter category names one per line or separated by commas (optional)</div>
       <div>
@@ -82,6 +93,7 @@
       const cardTextInput = document.querySelector('.card-text-input');
       const categoryNameInput = document.querySelector('.category-name-input');
       const categoryEditingCheckbox = document.querySelector('.category-editing-checkbox');
+      const isRandomizedCheckbox = document.querySelector('.is-randomized-checkbox');
       const linkContainer = document.querySelector('.link-container');
       const buttonCreateLink = document.querySelector('.btn-create-link');
 
@@ -97,6 +109,7 @@
         data[uncategorizedKey] = cardTexts;
         const settings = {};
         settings.allowCategoryEditing = categoryEditingCheckbox.checked;
+        settings.isRandomized = isRandomizedCheckbox.checked;
         data[settingsFlagsKey] = saveSettings(settings);
         const dataString = await saveToString(data);
         const baseUrl = window.location.href.replace(regexRemoveBasenameFromUrl, '/');

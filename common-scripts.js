@@ -2,15 +2,19 @@
 const settingsFlagsKey = '?';
 const settingsFlagsEnum = {
   allowCategoryEditing: 1,
+  isRandomized: 2,
 };
 const settingsDefaults = {
   allowCategoryEditing: true,
+  isRandomized: false,
 };
 
 function loadSettings(data) {
-  const settings = {};
+  const settings = Object.assign({}, settingsDefaults);
   const flags = data[settingsFlagsKey];
-  settings.allowCategoryEditing = Boolean(settingsFlagsEnum.allowCategoryEditing & flags);
+  for (const settingName of Object.keys(settingsFlagsEnum)) {
+    settings[settingName] = Boolean(settingsFlagsEnum[settingName] & flags);
+  }
   return settings;
 }
 function saveSettings(settings) {

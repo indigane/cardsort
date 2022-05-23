@@ -227,6 +227,9 @@
           categoryTemplate.content.querySelector('.title').removeAttribute('placeholder');
         }
         buttonCreateCategory.addEventListener('click', () => createCategory());
+        if (settings.isRandomized) {
+          cardTexts.sort(() => Math.random() - 0.5);
+        }
         for (const text of cardTexts) {
           createCard(text);
         }
