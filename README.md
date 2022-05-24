@@ -4,7 +4,7 @@ A tool for conducting a virtual card sorting.
 
 ## Demo
 
-[https://indigane.github.io/cardsort/card-sort.html#eJxNUMtOwzAQ...voGHGh0GQ==](https://indigane.github.io/cardsort/card-sort.html#eJxNUMtOwzAQ_JXIPbYIce0FJSCoSlBMXfWCOGyMSUxMHfmRyEL8O54WAYedGa_Xs-v9ZAu2fmblK7EVK71XH61JhaFjF6lTyM1Dxop8n-kGsQAsl0BD3mtZHLSPZIpcpCXSTdXUmW8R5AJImbHXl037rmQoOHlJJqfvrAuOjlndW4CzdkpZbMgPyqBiSxP9kJBOjzDbRqORfLDBaDyutR9BtoNLHXH5WO7rssri3FNP6gLTc-VgyzccaGflRH_uxJ01toNIobew3SFIDgpNd7FNJ_I4iTw_ndhRkFiNeMKXxazfcL9Po_qd91D9yf-belmxa7a--voGHGh0GQ==)
+[https://indigane.github.io/cardsort/card-sort.html#eJxNUMtOwzAQ...WN98_BRZsUQ==](https://indigane.github.io/cardsort/card-sort.html#eJxFUMtOwzAQ_JXIPbYIce0FJSCo2qCYuuKCOGyMSdyYOvIjkYX4dzwtgsPOjHft2fV-sQVbv7LyndiKld6rz9akwtCpi9Qp5OYhY0W-z3SHWACWS2BTNXXmewS5AFJm7PV10x6VDAUnL8nk9IN1wdEpq0cLcNZOKYsN-UEZ3NjSRL8kpNMjzLbRaCR3NhiNx7X2I8h2cKkjik_loS6rLC499aSuMCZXDrZ8w4F2Vk70l07cWWM7iBR6C9s9guSg0HQf23Qmj5PI89OZHQWJHYhnfFnM-gP1QxrV37wv1b_UPpIp8t60ZG8rdsvWN98_BRZsUQ==)
 
 ## Create your own
 
