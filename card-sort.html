@@ -200,6 +200,7 @@
         dragEnabled: true,
         dragSort: true,
         dragHandle: '.category-drag-handle',
+        layoutOnResize: false,
       }).on('layoutEnd', () => categoriesGrid.synchronize());
       const cardGrids = [uncategorizedCardsGrid];
 
@@ -250,6 +251,23 @@
         });
         buttonShareResult.addEventListener('click', shareResult);
         buttonExportResult.addEventListener('click', exportResult);
+        // Fix for window resize caused by virtual keyboard
+        // Muuri layout is deferred until input loses focus
+        let isDeferredResize = false;
+        window.addEventListener('resize', debounce(function handleWindowResize() {
+          if (document.activeElement.tagName.toLowerCase() === 'input') {
+            isDeferredResize = true;
+            return;
+          }
+          categoriesGrid.refreshItems().layout();
+        }, Muuri.defaultOptions.layoutOnResize));
+        document.addEventListener('focusout', function handleInputDefocus() {
+          if ( ! isDeferredResize) {
+            return;
+          }
+          categoriesGrid.refreshItems().layout();
+          isDeferredResize = false;
+        });
       }
 
       function createCard(text, categoryGrid) {
