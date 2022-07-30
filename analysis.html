@@ -15,17 +15,14 @@
       * {
         box-sizing: border-box;
       }
-      .main-layout {
-        display: grid;
-        grid-template-columns: calc(100vw - 50px);
-        grid-template-rows: min-content 1fr;
-        grid-template-areas:
-          "top top"
-          "bottom bottom";
-      }
-      .top-bar {
-        grid-area: top;
+      .results-input-container {
         padding: 15px;
+      }
+      .results-input-container .title-bar {
+        padding: 0 0 15px 0;
+      }
+      .results-input-container .title-bar h2 {
+        margin: 0;
       }
       #results-input {
         padding: 0.5em;
@@ -35,9 +32,28 @@
       /* Category refinement */
       .category-refinement {
         grid-area: bottom;
+        position: relative;
+      }
+      .category-refinement .title-bar {
+        position: sticky;
+        display: flex;
+        align-items: center;
+        top: 0;
+        gap: 15px;
+        padding: 15px;
+        background: #fff;
+      }
+      .category-refinement .title-bar h2 {
+        margin: 0;
+      }
+      .category-refinement .title-bar button {
+        cursor: pointer;
+      }
+      .category-refinement .title-bar button[disabled] {
+        cursor: not-allowed;
       }
       .category-refinement .categories {
-        padding: 10px;
+        padding: 15px;
       }
       .category-refinement .category {
         display: grid;
@@ -83,6 +99,11 @@
       .category-refinement .category-merge-button-start:focus {
         opacity: 1;
       }
+      @media (hover: none) {
+        .category-refinement .category-merge-button-start {
+          opacity: 1;
+        }
+      }
       .category-refinement .categories:not(.is-merge-active) .category-merge-button-end,
       .category-refinement .categories.is-merge-active .is-merge-source .category-merge-button-end,
       .category-refinement .categories.is-merge-active .category-merge-button-start,
@@ -101,7 +122,8 @@
       .category-refinement .category.is-merge-pending {
         opacity: .3;
       }
-      .category-refinement .category.is-merge-pending .category-name {
+      .category-refinement .category.is-merge-pending .category-name,
+      .category-refinement .merged-category.is-undo-pending .merged-category-name {
         text-decoration: line-through;
       }
       .category-refinement .merged-category {
@@ -148,7 +170,16 @@
       }
       /* Association table */
       .associations {
-        padding: 30px;
+        padding: 15px;
+      }
+      .associations .title-bar {
+        position: sticky;
+        top: 0;
+        padding: 15px 0;
+        background: #fff;
+      }
+      .associations .title-bar h2 {
+        margin: 0;
       }
       .association-table {
         border-collapse: collapse;
@@ -198,19 +229,28 @@
     </style>
   </head>
   <body>
-    <div class="main-layout">
-      <div class="top-bar">
-        <div>
-          <label for="results-input">Paste one or more results below to add them</label>
-        </div>
-        <textarea id="results-input"></textarea>
+    <div class="results-input-container">
+      <div class="title-bar">
+        <h2>Data input</h2>
       </div>
-      <div class="category-refinement">
-        <div class="categories"></div>
+      <div>
+        <label for="results-input">Paste one or more results below to add them</label>
       </div>
-      <div class="associations">
-        <table class="association-table"></table>
+      <textarea id="results-input"></textarea>
+    </div>
+    <div class="category-refinement">
+      <div class="title-bar">
+        <h2>Category refinement</h2>
+        <button>Auto-merge</button>
+        <button class="button-recalculate" disabled>Apply merged categories</button>
       </div>
+      <div class="categories"></div>
+    </div>
+    <div class="associations">
+      <div class="title-bar">
+        <h2>Category&ndash;card table</h2>
+      </div>
+      <table class="association-table"></table>
     </div>
     <template class="category-template">
       <div class="category">
@@ -322,7 +362,10 @@
           resultCount: results.length,
         };
         for (const result of results) {
-          for (const [categoryName, cards] of Object.entries(result)) {
+          for (let [categoryName, cards] of Object.entries(result)) {
+            if (categoryName in mergedCategories) {
+              categoryName = mergedCategories[categoryName];
+            }
             if ( ! (categoryName in data.cardCountsByCategory)) {
               data.cardCountsByCategory[categoryName] = {};
               data.categories.push({
@@ -444,6 +487,9 @@
       const categoriesContainer = document.querySelector('.category-refinement .categories');
       const categoryTemplate = document.querySelector('.category-template');
       const cardTemplate = document.querySelector('.card-template');
+      const recalculateButton = document.querySelector('.category-refinement .button-recalculate');
+
+      recalculateButton.addEventListener('click', () => calculateAndRender());
 
       function renderCategoryRefinement(data) {
         const categoryElements = [];
@@ -468,8 +514,20 @@
           categoryElement.querySelector('.category-merge-button-end').addEventListener('click', handleMergeEnd);
           categoryElement.querySelector('.category-merge-button-cancel').addEventListener('click', handleMergeCancel);
           categoryElements.push(categoryElement);
+          const thisCategoryMergedCategories = (
+            Object.entries(mergedCategories)
+            .filter(([sourceName, targetName]) => targetName == category.name)
+            .map(([sourceName, targetName]) => sourceName)
+          );
+          if (thisCategoryMergedCategories.length > 0) {
+            categoryElement.classList.add('has-merged-categories');
+            for (sourceCategoryName of thisCategoryMergedCategories) {
+              renderMergeToolMergedCategory(categoryElement, {name: sourceCategoryName});
+            }
+          }
         }
         categoriesContainer.replaceChildren(...categoryElements);
+        updateRecalculateButton();
       }
 
       function handleMergeStart() {
@@ -493,6 +551,7 @@
         targetCategoryElement.classList.add('has-merged-categories');
         renderMergeToolMergedCategory(targetCategoryElement, sourceCategory);
         mergedCategories[sourceCategory.name] = targetCategory.name;
+        updateRecalculateButton();
       }
       function handleMergeUndo() {
         const undoButton = this;
@@ -500,15 +559,29 @@
         const targetCategory = targetCategoryElement._category;
         const sourceCategory = undoButton._sourceCategory;
         const sourceCategoryElement = sourceCategory.element;
-        if (sourceCategoryElement.classList.contains('is-merge-pending')) {
-          sourceCategoryElement.classList.remove('is-merge-pending');
+        if (sourceCategoryElement) {
+          if (sourceCategoryElement.classList.contains('is-merge-pending')) {
+            sourceCategoryElement.classList.remove('is-merge-pending');
+          }
+          undoButton.closest('.merged-category').remove();
         }
-        delete mergedCategories[sourceCategory.name];
+        else {
+          undoButton.closest('.merged-category').classList.add('is-undo-pending');
+        }
         const hasMoreMergedCategories = Object.values(mergedCategories).includes(targetCategory.name);
         if ( ! hasMoreMergedCategories) {
           targetCategoryElement.classList.remove('has-merged-categories');
         }
-        undoButton.closest('.merged-category').remove();
+        delete mergedCategories[sourceCategory.name];
+        updateRecalculateButton();
+      }
+      function updateRecalculateButton() {
+        if (document.querySelector('.is-merge-pending, .is-undo-pending')) {
+          recalculateButton.disabled = false;
+        }
+        else {
+          recalculateButton.disabled = true;
+        }
       }
 
       function renderMergeToolMergedCategory(targetCategoryElement, sourceCategory) {
