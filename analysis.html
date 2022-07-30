@@ -99,11 +99,13 @@
       .category-refinement .category-merge-button-start:focus {
         opacity: 1;
       }
+      /*
       @media (hover: none) {
         .category-refinement .category-merge-button-start {
           opacity: 1;
         }
       }
+      */
       .category-refinement .categories:not(.is-merge-active) .category-merge-button-end,
       .category-refinement .categories.is-merge-active .is-merge-source .category-merge-button-end,
       .category-refinement .categories.is-merge-active .category-merge-button-start,
@@ -568,11 +570,11 @@
         else {
           undoButton.closest('.merged-category').classList.add('is-undo-pending');
         }
+        delete mergedCategories[sourceCategory.name];
         const hasMoreMergedCategories = Object.values(mergedCategories).includes(targetCategory.name);
         if ( ! hasMoreMergedCategories) {
           targetCategoryElement.classList.remove('has-merged-categories');
         }
-        delete mergedCategories[sourceCategory.name];
         updateRecalculateButton();
       }
       function updateRecalculateButton() {
