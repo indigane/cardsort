@@ -99,3 +99,9 @@ function debounce(func, wait, immediate) {
     }
   };
 }
+
+function asTextContent(input) {
+  const tempElement = document.createElement('span');
+  tempElement.textContent = input;
+  return tempElement.innerHTML;
+}

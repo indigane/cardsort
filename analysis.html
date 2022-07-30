@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Card Sorting Analysis</title>
+    <style>
+      /* Reset */
+      body, html {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        color: #000;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      .main-layout {
+        display: grid;
+        grid-template-columns: calc(100vw - 50px);
+        grid-template-rows: min-content 1fr;
+        grid-template-areas:
+          "top top"
+          "bottom bottom";
+      }
+      .top-bar {
+        grid-area: top;
+        padding: 15px;
+      }
+      #results-input {
+        padding: 0.5em;
+        width: 100%;
+        height: 2.5em;
+      }
+      /* Category refinement */
+      .category-refinement {
+        grid-area: bottom;
+      }
+      .category-refinement .categories {
+        padding: 10px;
+      }
+      .category-refinement .category {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        grid-template-rows: min-content 1fr;
+        grid-template-areas:
+          "topleft right"
+          "left right"
+          "bottomleft right";
+        gap: 7px 7px;
+        margin-bottom: 10px;
+        width: 100%;
+        padding: 10px;
+        background: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
+      }
+      .category-refinement .category-name {
+        grid-area: topleft;
+      }
+      .category-refinement .category-merge-tool {
+        grid-area: bottomleft;
+      }
+      .category-refinement .merged-categories {
+        grid-area: left;
+      }
+      .category-refinement .category-merge-tool button {
+        --border-lighter: rgba(0,0,0,.15);
+        --border-darker: rgba(0,0,0,.3);
+        background: #fff;
+        border-width: 2px;
+        border-radius: 5px;
+        border-color: var(--border-lighter) var(--border-darker) var(--border-darker) var(--border-lighter);
+        padding: 3px 7px;
+        cursor: pointer;
+      }
+      .category-refinement .category-merge-tool button:active {
+        border-color: var(--border-darker) var(--border-lighter) var(--border-lighter) var(--border-darker);
+      }
+      .category-refinement .category-merge-button-start {
+        opacity: 0;
+      }
+      .category-refinement .category:hover .category-merge-button-start,
+      .category-refinement .category-merge-button-start:focus {
+        opacity: 1;
+      }
+      .category-refinement .categories:not(.is-merge-active) .category-merge-button-end,
+      .category-refinement .categories.is-merge-active .is-merge-source .category-merge-button-end,
+      .category-refinement .categories.is-merge-active .category-merge-button-start,
+      .category-merge-button-cancel {
+        display: none;
+      }
+      .category-refinement .has-merged-categories .category-merge-button-start {
+        visibility: hidden;
+      }
+      .is-merge-active .is-merge-source .category-merge-button-cancel {
+        display: unset;
+      }
+      .category-refinement .category.is-merge-pending .category-merge-tool {
+        display: none;
+      }
+      .category-refinement .category.is-merge-pending {
+        opacity: .3;
+      }
+      .category-refinement .category.is-merge-pending .category-name {
+        text-decoration: line-through;
+      }
+      .category-refinement .merged-category {
+        display: flex;
+        align-items: baseline;
+        font-size: 80%;
+      }
+      .category-refinement .merged-category-name {
+        flex-grow: 1;
+        margin-left: 0.3em;
+      }
+      .category-refinement .merged-category-button-undo {
+        cursor: pointer;
+        filter: grayscale(1);
+      }
+      .category-refinement .category-cards {
+        grid-area: right;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        align-content: flex-start;
+        margin-bottom: -10px;
+      }
+      .category-refinement .card {
+        display: flex;
+        padding: 5px;
+        margin-bottom: 10px;
+        --weight: 0;
+        --more-weight: calc(var(--weight) + 0.3);
+        background-color: rgba(102, 102, 255, var(--weight));
+        border: 1px solid rgba(102, 102, 255, 0);
+        border-color: rgba(102, 102, 255, var(--more-weight));
+        border-radius: 5px;
+      }
+      .category-refinement .card:not(:last-child) {
+        margin-right: 10px;
+      }
+      .category-refinement .card-text {
+        margin-right: 0.25em;
+        max-width: calc(100vw - 300px);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      /* Association table */
+      .associations {
+        padding: 30px;
+      }
+      .association-table {
+        border-collapse: collapse;
+        --border-styles: 1px solid #eee;
+      }
+      .association-table th {
+        text-align: inherit;
+        font-weight: inherit;
+        padding: 0;
+      }
+      .association-table td {
+        border: var(--border-styles);
+        padding: 0;
+      }
+      .association-table .card-text-cell {
+        width: 30px;
+        height: 200px;
+        vertical-align: bottom;
+      }
+      .association-table .card-text {
+        position: absolute;
+        width: 260px;
+        transform-origin: left bottom;
+        transform: translateX(16px) translateY(-20px) rotate(-45deg);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .association-table .category-name {
+        padding-right: 0.25em;
+        text-align: right;
+        white-space: nowrap;
+        border-bottom: var(--border-styles);
+      }
+      .association-table .card-correlation {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        --light: #fff;
+        --dark: #333;
+        --weight: 0;
+        background-color: rgba(102, 102, 255, var(--weight));
+        width: 28px;
+        height: 28px;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main-layout">
+      <div class="top-bar">
+        <div>
+          <label for="results-input">Paste one or more results below to add them</label>
+        </div>
+        <textarea id="results-input"></textarea>
+      </div>
+      <div class="category-refinement">
+        <div class="categories"></div>
+      </div>
+      <div class="associations">
+        <table class="association-table"></table>
+      </div>
+    </div>
+    <template class="category-template">
+      <div class="category">
+        <div class="category-name"></div>
+        <div class="category-cards"></div>
+        <div class="merged-categories"></div>
+        <div class="category-merge-tool">
+          <button class="category-merge-button-start">Merge this category into...</button>
+          <button class="category-merge-button-end">Merge into here</button>
+          <button class="category-merge-button-cancel">Cancel merge</button>
+        </div>
+      </div>
+    </template>
+    <template class="merged-category-template">
+      <div class="merged-category">
+        <div class="merged-category-button-undo">❌</div>
+        <div class="merged-category-name"></div>
+      </div>
+    </template>
+    <template class="card-template">
+      <div class="card">
+        <div class="card-text"></div>
+        <div class="card-correlation"></div>
+      </div>
+    </template>
+    <script src="pako-2.0.4.min.js"></script>
+    <script src="common-scripts.js"></script>
+    <script>
+      const resultsInput = document.querySelector('#results-input');
+      const mergedCategories = {};
+      let loadedResults = [];
+      resultsInput.addEventListener('input', handleResultsInput);
+      const jsonSplitRegex = /\}[^{}]*\{/;
+
+      async function handleResultsInput() {
+        const text = resultsInput.value;
+        let results = [];
+        if (text.includes('{')) {
+          try {
+            results = [JSON.parse(text)];
+          }
+          catch(e) {
+            results = text.split(jsonSplitRegex);
+            results[0] = results[0] + '}';
+            for (let i = 1; i < results.length - 1; i++) {
+              results[i] = '{' + results[i] + '}';
+            }
+            results[results.length - 1] = '{' + results[results.length - 1];
+            results = results.map(JSON.parse);
+          }
+        }
+        else if (text.includes('http')) {
+          results = text.split('http');
+          results = results.map(result => result.trim());
+          results = results.filter(result => !!result);
+          results = results.map(async result => {
+            const url = 'http' + result;
+            const urlObj = new URL(url);
+            const data = await loadFromString(urlObj.hash.split('#').pop());
+            const keyValuePairs = Object.entries(data).filter(([key, value]) => !reservedKeys.includes(key));
+            result = Object.fromEntries(keyValuePairs);
+            return result;
+          });
+          results = await Promise.all(results);
+        }
+        if (results.length > 0) {
+          resultsInput.value = '';
+          console.log(results);
+          addToLoadedResults(results);
+        }
+      }
+
+      function addToLoadedResults(newResults) {
+        const concatenatedResults = loadedResults.concat(newResults);
+        const seenResultStrings = new Set();
+        const uniqueResults = [];
+        for (const result of concatenatedResults) {
+          const resultAsStr = JSON.stringify(result);
+          if (seenResultStrings.has(resultAsStr)) {
+            continue;
+          }
+          seenResultStrings.add(resultAsStr);
+          uniqueResults.push(result);
+        }
+        loadedResults = uniqueResults;
+        calculateAndRender();
+      }
+
+      function calculateAndRender() {
+        const data = combineResults(loadedResults);
+
+        calculateCategorySimilarities(data);
+        calculateCardSimilarities(data);
+
+        sortCategoriesBySimilarity(data);
+        sortCardsBySimilarity(data);
+
+        renderCategoryRefinement(data);
+        renderAssociationTable(data);
+
+        console.log(data);
+      }
+
+      function combineResults(results) {
+        const data = {
+          categories: [],
+          cards: [],
+          cardCountsByCategory: {},
+          resultCount: results.length,
+        };
+        for (const result of results) {
+          for (const [categoryName, cards] of Object.entries(result)) {
+            if ( ! (categoryName in data.cardCountsByCategory)) {
+              data.cardCountsByCategory[categoryName] = {};
+              data.categories.push({
+                name: categoryName,
+                categorySimilarities: {},
+              });
+            }
+            const cardCountCategory = data.cardCountsByCategory[categoryName];
+            for (const card of cards) {
+              if ( ! (card in cardCountCategory)) {
+                cardCountCategory[card] = 0;
+              }
+              cardCountCategory[card] += 1;
+              let cardObj = data.cards.find(cardObj => cardObj.text == card);
+              if (cardObj === undefined) {
+                cardObj = {
+                  text: card,
+                  categories: [],
+                  cardSimilarities: {},
+                };
+                data.cards.push(cardObj);
+              }
+              cardObj.categories.push(categoryName);
+            }
+          }
+        }
+        return data;
+      }
+
+      function calculateCategorySimilarities(data) {
+        for (const categoryA of data.categories) {
+          const cardsA = Object.keys(data.cardCountsByCategory[categoryA.name]);
+          for (const categoryB of data.categories) {
+            if (categoryB.name in categoryA.categorySimilarities) {
+              continue;
+            }
+            const cardsB = Object.keys(data.cardCountsByCategory[categoryB.name]);
+            let amountOfCardsInBoth = 0;
+            let amountOfCardsInA = cardsA.length;
+            let amountOfCardsInB = cardsB.length;
+            for (const cardA of cardsA) {
+              if (cardsB.includes(cardA)) {
+                amountOfCardsInBoth += 1;
+                amountOfCardsInA -= 1;
+                amountOfCardsInB -= 1;
+              }
+            }
+            const jaccardScore = amountOfCardsInBoth / (amountOfCardsInBoth + amountOfCardsInA + amountOfCardsInB);
+            categoryA.categorySimilarities[categoryB.name] = jaccardScore;
+          }
+        }
+      }
+
+      function calculateCardSimilarities(data) {
+        for (const cardA of data.cards) {
+          for (const cardB of data.cards) {
+            if (cardB.text in cardA.cardSimilarities) {
+              continue;
+            }
+            let amountOfCategoriesContainingBoth = 0;
+            let amountOfCategoriesContainingA = cardA.categories.length;
+            let amountOfCategoriesContainingB = cardB.categories.length;
+            for (const categoryA of cardA.categories) {
+              if (cardB.categories.includes(categoryA)) {
+                amountOfCategoriesContainingBoth += 1;
+                amountOfCategoriesContainingA -= 1;
+                amountOfCategoriesContainingB -= 1;
+              }
+            }
+            const jaccardScore = amountOfCategoriesContainingBoth / (amountOfCategoriesContainingBoth + amountOfCategoriesContainingA + amountOfCategoriesContainingB);
+            cardA.cardSimilarities[cardB.text] = jaccardScore;
+          }
+        }
+      }
+
+      function sortCategoriesBySimilarity(data) {
+        const sortedCategories = [];
+        const unsortedCategories = Array.from(data.categories);
+        while (unsortedCategories.length > 0) {
+          const category = unsortedCategories.shift();
+          sortedCategories.push(category);
+          const similarities = Object.entries(category.categorySimilarities).map(([name, similarity]) => ({name, similarity}));
+          similarities.sort((a, b) => b.similarity - a.similarity);
+          for (const categorySimilarity of similarities) {
+            if (categorySimilarity.similarity <= 0.3) {
+              break;
+            }
+            const categoryIndex = unsortedCategories.findIndex(category => category.name == categorySimilarity.name);
+            if (categoryIndex !== -1) {
+              sortedCategories.push(unsortedCategories.splice(categoryIndex, 1)[0]);
+            }
+          }
+        }
+        data.categories = sortedCategories;
+      }
+
+      function sortCardsBySimilarity(data) {
+        const sortedCards = [];
+        const unsortedCards = Array.from(data.cards);
+        while (unsortedCards.length > 0) {
+          const card = unsortedCards.shift();
+          sortedCards.push(card);
+          const similarities = Object.entries(card.cardSimilarities).map(([text, similarity]) => ({text, similarity}));
+          similarities.sort((a, b) => b.similarity - a.similarity);
+          for (const cardSimilarity of similarities) {
+            if (cardSimilarity.similarity <= 0.3) {
+              break;
+            }
+            const cardIndex = unsortedCards.findIndex(card => card.text == cardSimilarity.text);
+            if (cardIndex !== -1) {
+              sortedCards.push(unsortedCards.splice(cardIndex, 1)[0]);
+            }
+          }
+        }
+        data.cards = sortedCards;
+      }
+
+      // Category refinement
+      const categoriesContainer = document.querySelector('.category-refinement .categories');
+      const categoryTemplate = document.querySelector('.category-template');
+      const cardTemplate = document.querySelector('.card-template');
+
+      function renderCategoryRefinement(data) {
+        const categoryElements = [];
+        for (const category of data.categories) {
+          const categoryElement = document.importNode(categoryTemplate.content.children[0], true);
+          const cardElements = [];
+          for (const [cardText, cardCount] of Object.entries(data.cardCountsByCategory[category.name])) {
+            const cardElement = document.importNode(cardTemplate.content.children[0], true);
+            const cardPercentage = Math.round((cardCount / data.resultCount) * 100.0);
+            const weight = (cardPercentage / 100.0) / 2.0;
+            cardElement.style.setProperty('--weight', weight);
+            cardElement.querySelector('.card-text').textContent = cardText;
+            cardElement.querySelector('.card-correlation').textContent = `${cardPercentage}%`;
+            cardElement.querySelector('.card-correlation').title = `${cardCount}/${data.resultCount} participants`;
+            cardElements.push(cardElement);
+          }
+          category.element = categoryElement;
+          categoryElement._category = category;
+          categoryElement.querySelector('.category-name').textContent = category.name;
+          categoryElement.querySelector('.category-cards').replaceChildren(...cardElements);
+          categoryElement.querySelector('.category-merge-button-start').addEventListener('click', handleMergeStart);
+          categoryElement.querySelector('.category-merge-button-end').addEventListener('click', handleMergeEnd);
+          categoryElement.querySelector('.category-merge-button-cancel').addEventListener('click', handleMergeCancel);
+          categoryElements.push(categoryElement);
+        }
+        categoriesContainer.replaceChildren(...categoryElements);
+      }
+
+      function handleMergeStart() {
+        const categoryElement = this.closest('.category');
+        categoriesContainer.classList.add('is-merge-active');
+        categoryElement.classList.add('is-merge-source');
+      }
+      function handleMergeCancel() {
+        const categoryElement = this.closest('.category');
+        categoriesContainer.classList.remove('is-merge-active');
+        categoryElement.classList.remove('is-merge-source');
+      }
+      function handleMergeEnd() {
+        const targetCategoryElement = this.closest('.category');
+        const sourceCategoryElement = categoriesContainer.querySelector('.is-merge-source');
+        const targetCategory = targetCategoryElement._category;
+        const sourceCategory = sourceCategoryElement._category;
+        categoriesContainer.classList.remove('is-merge-active');
+        sourceCategoryElement.classList.remove('is-merge-source');
+        sourceCategoryElement.classList.add('is-merge-pending');
+        targetCategoryElement.classList.add('has-merged-categories');
+        renderMergeToolMergedCategory(targetCategoryElement, sourceCategory);
+        mergedCategories[sourceCategory.name] = targetCategory.name;
+      }
+      function handleMergeUndo() {
+        const undoButton = this;
+        const targetCategoryElement = undoButton.closest('.category');
+        const targetCategory = targetCategoryElement._category;
+        const sourceCategory = undoButton._sourceCategory;
+        const sourceCategoryElement = sourceCategory.element;
+        if (sourceCategoryElement.classList.contains('is-merge-pending')) {
+          sourceCategoryElement.classList.remove('is-merge-pending');
+        }
+        delete mergedCategories[sourceCategory.name];
+        const hasMoreMergedCategories = Object.values(mergedCategories).includes(targetCategory.name);
+        if ( ! hasMoreMergedCategories) {
+          targetCategoryElement.classList.remove('has-merged-categories');
+        }
+        undoButton.closest('.merged-category').remove();
+      }
+
+      function renderMergeToolMergedCategory(targetCategoryElement, sourceCategory) {
+        const mergedContainer = targetCategoryElement.querySelector('.merged-categories');
+        const mergedCategoryElement = document.importNode(document.querySelector('.merged-category-template').content.children[0], true);
+        mergedCategoryElement.querySelector('.merged-category-name').textContent = sourceCategory.name;
+        const undoButton = mergedCategoryElement.querySelector('.merged-category-button-undo');
+        undoButton._sourceCategory = sourceCategory;
+        undoButton.addEventListener('click', handleMergeUndo);
+        mergedContainer.appendChild(mergedCategoryElement);
+      }
+
+      // Card-category association table
+      const associationTable = document.querySelector('.association-table');
+
+      function renderAssociationTable(data) {
+        let tableHtml = '';
+
+        // Card texts row
+        tableHtml += '<tr>';
+        tableHtml += '<th></th>';
+        for (const card of data.cards) {
+          tableHtml += `
+          <th class="card-text-cell">
+            <div class="card-text">${asTextContent(card.text)}</div>
+          </th>
+          `;
+        }
+        tableHtml += '</tr>';
+
+        for (const category of data.categories) {
+          tableHtml += '<tr>';
+          tableHtml += `<th class="category-name">${asTextContent(category.name)}</th>`;
+          for (const card of data.cards) {
+            const cardCount = data.cardCountsByCategory[category.name][card.text];
+            const cardPercentage = cardCount ? Math.round((cardCount / data.resultCount) * 100.0) : 0;
+            const weight = cardPercentage / 100.0;
+            const fontColor = weight > 0.5 ? '--light' : '--dark';
+            if (cardCount > 0) {
+              tableHtml += `<td><div class="card-correlation" style="--weight: ${weight}; color: var(${fontColor});" title="${cardCount}/${data.resultCount} participants">${cardPercentage}</div></td>`;
+            }
+            else {
+              tableHtml += '<td><div class="card-correlation"></div></td>';
+            }
+          }
+          tableHtml += '</tr>';
+        }
+        performance.mark('innerhtml-start');
+        associationTable.innerHTML = tableHtml;
+        performance.mark('innerhtml-end');
+        performance.measure("innerhtml-start to end", 'innerhtml-start', 'innerhtml-end');
+        console.log(performance.getEntriesByType("measure"));
+      }
+    </script>
+  </body>
+</html>
