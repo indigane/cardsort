@@ -6,7 +6,7 @@ It works best when combined with other tooling. For example you could create a f
 
 -----
 
-I am considering adding analysis tools. If you're interested, you can discuss [in this issue](https://github.com/indigane/cardsort/issues/2).
+Analysis tools are in development. If you're interested, you can take a look at the [current progress](https://indigane.github.io/cardsort/analysis.html) and discuss [in the issues page](https://github.com/indigane/cardsort/issues/2).
 
 ## Demo
 
@@ -19,3 +19,15 @@ https://indigane.github.io/cardsort/
 ## Read about card sorting
 
 https://en.wikipedia.org/wiki/Card_sorting
+
+-----
+
+## Advanced use
+
+You can pass query parameters to the card sorting page instead of going through the creation form.
+
+All parameters are optional.
+
+```url
+https://indigane.github.io/cardsort/card-sort.html?cards=a,b,c&categories=1,2,3&allowCategoryEditing=0&isRandomized=1
+```
