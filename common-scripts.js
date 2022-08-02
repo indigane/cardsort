@@ -105,3 +105,35 @@ function asTextContent(input) {
   tempElement.textContent = input;
   return tempElement.innerHTML;
 }
+
+function setContentEditablePlaintext(element) {
+  element.setAttribute('contenteditable', 'PLAINTEXT-ONLY');
+  const isPlaintextSupported = element.contentEditable === 'plaintext-only';
+  element.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+      element.blur();
+      event.preventDefault();
+    }
+  });
+  element.addEventListener('blur', function(event) {
+    // Combine text nodes into one text node
+    element.textContent = element.textContent;
+  });
+  if (isPlaintextSupported) {
+    return;
+  }
+  // Polyfill for contenteditable="plaintext-only"
+  element.contentEditable = true;
+  const observer = new MutationObserver(plaintextOnlyMutationHandler);
+  observer.observe(element, {childList: true, subtree: true});
+}
+
+function plaintextOnlyMutationHandler(mutationList, observer) {
+  for (const mutation of mutationList) {
+    for (const addedNode of mutation.addedNodes) {
+      if (addedNode.nodeType == Node.ELEMENT_NODE) {
+        addedNode.replaceWith(addedNode.textContent);
+      }
+    }
+  }
+}

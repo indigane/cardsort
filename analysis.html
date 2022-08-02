@@ -12,6 +12,9 @@
         font-family: sans-serif;
         color: #000;
       }
+      body {
+        padding-bottom: 60vh;
+      }
       * {
         box-sizing: border-box;
       }
@@ -31,7 +34,6 @@
       }
       /* Category refinement */
       .category-refinement {
-        grid-area: bottom;
         position: relative;
       }
       .category-refinement .title-bar {
@@ -46,7 +48,9 @@
       .category-refinement .title-bar h2 {
         margin: 0;
       }
-      .category-refinement .title-bar button {
+      .category-refinement .title-bar button,
+      .category-refinement .title-bar input[type="checkbox"],
+      .category-refinement .title-bar label {
         cursor: pointer;
       }
       .category-refinement .title-bar button[disabled] {
@@ -72,6 +76,11 @@
       }
       .category-refinement .category-name {
         grid-area: topleft;
+        white-space: pre-wrap;
+        outline-offset: 3px;
+      }
+      .category-refinement .category-name:hover:not(:focus):not(:active) {
+        outline: 2px solid #ddd;
       }
       .category-refinement .category-merge-tool {
         grid-area: bottomleft;
@@ -99,13 +108,6 @@
       .category-refinement .category-merge-button-start:focus {
         opacity: 1;
       }
-      /*
-      @media (hover: none) {
-        .category-refinement .category-merge-button-start {
-          opacity: 1;
-        }
-      }
-      */
       .category-refinement .categories:not(.is-merge-active) .category-merge-button-end,
       .category-refinement .categories.is-merge-active .is-merge-source .category-merge-button-end,
       .category-refinement .categories.is-merge-active .category-merge-button-start,
@@ -159,6 +161,9 @@
         border: 1px solid rgba(102, 102, 255, 0);
         border-color: rgba(102, 102, 255, var(--more-weight));
         border-radius: 5px;
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0);
+        --similarity-highlight: 0 0 0 2px rgba(0, 0, 0, 1);
+        transition: box-shadow .1s ease-in;
       }
       .category-refinement .card:not(:last-child) {
         margin-right: 10px;
@@ -172,12 +177,14 @@
       }
       /* Association table */
       .associations {
+        position: relative;
         padding: 15px;
       }
       .associations .title-bar {
         position: sticky;
         top: 0;
         padding: 15px 0;
+        width: fit-content;
         background: #fff;
       }
       .associations .title-bar h2 {
@@ -186,6 +193,14 @@
       .association-table {
         border-collapse: collapse;
         --border-styles: 1px solid #eee;
+      }
+      .association-table tr:first-of-type th:first-of-type {
+        text-align: right;
+        vertical-align: bottom;
+        padding: 15px;
+      }
+      .association-table .associations-button-swap-axes {
+        margin: 15px 0 0 15px;
       }
       .association-table th {
         text-align: inherit;
@@ -196,12 +211,12 @@
         border: var(--border-styles);
         padding: 0;
       }
-      .association-table .card-text-cell {
+      .association-table .x-axis-head-cell {
         width: 30px;
         height: 200px;
         vertical-align: bottom;
       }
-      .association-table .card-text {
+      .association-table .x-axis-head-text {
         position: absolute;
         width: 260px;
         transform-origin: left bottom;
@@ -210,7 +225,7 @@
         white-space: nowrap;
         text-overflow: ellipsis;
       }
-      .association-table .category-name {
+      .association-table .y-axis-head-text {
         padding-right: 0.25em;
         text-align: right;
         white-space: nowrap;
@@ -241,10 +256,15 @@
       <textarea id="results-input"></textarea>
     </div>
     <div class="category-refinement">
+      <style class="similarity-hover-effect-stylesheet"></style>
       <div class="title-bar">
         <h2>Category refinement</h2>
         <button>Auto-merge</button>
-        <button class="button-recalculate" disabled>Apply merged categories</button>
+        <button class="button-recalculate" disabled>Apply changes</button>
+        <label for="similarity-hover-effect-toggle">
+          <input type="checkbox" id="similarity-hover-effect-toggle" />
+          Similarity highlight on hover
+        </label>
       </div>
       <div class="categories"></div>
     </div>
@@ -255,7 +275,7 @@
       <table class="association-table"></table>
     </div>
     <template class="category-template">
-      <div class="category">
+      <div class="category" spellcheck="false">
         <div class="category-name"></div>
         <div class="category-cards"></div>
         <div class="merged-categories"></div>
@@ -283,6 +303,7 @@
     <script>
       const resultsInput = document.querySelector('#results-input');
       const mergedCategories = {};
+      const renamedCategories = {};
       let loadedResults = [];
       resultsInput.addEventListener('input', handleResultsInput);
       const jsonSplitRegex = /\}[^{}]*\{/;
@@ -493,12 +514,28 @@
 
       recalculateButton.addEventListener('click', () => calculateAndRender());
 
+      const similarityHoverEffectStyleElement = document.querySelector('.similarity-hover-effect-stylesheet');
+      const similarityHoverEffectToggleInput = document.querySelector('#similarity-hover-effect-toggle');
+      let isSimilarityHoverEffectEnabled = similarityHoverEffectToggleInput.checked;
+      similarityHoverEffectToggleInput.addEventListener('change', () => isSimilarityHoverEffectEnabled = similarityHoverEffectToggleInput.checked);
+      let isSimilarityHoverEffectApplied = false;
+      document.body.addEventListener('mouseover', function handleMouseOver() {
+        if ( ! isSimilarityHoverEffectApplied) {
+          return;
+        }
+        similarityHoverEffectStyleElement.innerHTML = '';
+        isSimilarityHoverEffectApplied = false;
+      });
+
       function renderCategoryRefinement(data) {
         const categoryElements = [];
         for (const category of data.categories) {
           const categoryElement = document.importNode(categoryTemplate.content.children[0], true);
+          const similarityHoverSelector = [];
           const cardElements = [];
-          for (const [cardText, cardCount] of Object.entries(data.cardCountsByCategory[category.name])) {
+          const cardEntries = Object.entries(data.cardCountsByCategory[category.name]);
+          cardEntries.sort(([textA], [textB]) => textA.localeCompare(textB));
+          for (const [cardText, cardCount] of cardEntries) {
             const cardElement = document.importNode(cardTemplate.content.children[0], true);
             const cardPercentage = Math.round((cardCount / data.resultCount) * 100.0);
             const weight = (cardPercentage / 100.0) / 2.0;
@@ -507,10 +544,29 @@
             cardElement.querySelector('.card-correlation').textContent = `${cardPercentage}%`;
             cardElement.querySelector('.card-correlation').title = `${cardCount}/${data.resultCount} participants`;
             cardElements.push(cardElement);
+            // Similarity hover effect
+            const textBase64 = btoa(cardText);
+            cardElement.setAttribute('data-text-b64', textBase64);
+            similarityHoverSelector.push(`.category-refinement .card[data-text-b64="${textBase64}"]`);
+            cardElement.addEventListener('mouseover', function handleMouseOver(event) {
+              if ( ! isSimilarityHoverEffectEnabled) {
+                return;
+              }
+              event.stopPropagation();
+              isSimilarityHoverEffectApplied = true;
+              similarityHoverEffectStyleElement.innerHTML = `.category-refinement .card[data-text-b64="${textBase64}"] { box-shadow: var(--similarity-highlight); }`;
+            });
           }
           category.element = categoryElement;
           categoryElement._category = category;
-          categoryElement.querySelector('.category-name').textContent = category.name;
+          const categoryNameElement = categoryElement.querySelector('.category-name');
+          categoryNameElement.textContent = renamedCategories[category.name] || category.name;
+          categoryNameElement.addEventListener('input', () => {
+            renamedCategories[category.name] = categoryNameElement.textContent;
+            categoryNameElement.classList.add('dirty');
+            updateRecalculateButton();
+          });
+          setContentEditablePlaintext(categoryNameElement);
           categoryElement.querySelector('.category-cards').replaceChildren(...cardElements);
           categoryElement.querySelector('.category-merge-button-start').addEventListener('click', handleMergeStart);
           categoryElement.querySelector('.category-merge-button-end').addEventListener('click', handleMergeEnd);
@@ -527,6 +583,16 @@
               renderMergeToolMergedCategory(categoryElement, {name: sourceCategoryName});
             }
           }
+          // Similarity hover effect
+          const similarityStyleText = `${similarityHoverSelector.join(', ')} { box-shadow: var(--similarity-highlight); }`;
+          categoryElement.addEventListener('mouseover', function handleMouseOver() {
+            if ( ! isSimilarityHoverEffectEnabled) {
+              return;
+            }
+            event.stopPropagation();
+            isSimilarityHoverEffectApplied = true;
+            similarityHoverEffectStyleElement.innerHTML = similarityStyleText;
+          });
         }
         categoriesContainer.replaceChildren(...categoryElements);
         updateRecalculateButton();
@@ -578,7 +644,7 @@
         updateRecalculateButton();
       }
       function updateRecalculateButton() {
-        if (document.querySelector('.is-merge-pending, .is-undo-pending')) {
+        if (categoriesContainer.querySelector('.is-merge-pending, .is-undo-pending, .dirty')) {
           recalculateButton.disabled = false;
         }
         else {
@@ -599,43 +665,117 @@
       // Card-category association table
       const associationTable = document.querySelector('.association-table');
 
+      associationTable.addEventListener('click', function handleClick(event) {
+        if (event.target.matches('.associations-button-swap-axes')) {
+          associationTableSwapAxes(event.target);
+        }
+      });
+
       function renderAssociationTable(data) {
         let tableHtml = '';
-
-        // Card texts row
+        // Categories on X-axis, Cards on Y-axis
+        tableHtml += '<tbody class="x-categories-y-cards">';
         tableHtml += '<tr>';
-        tableHtml += '<th></th>';
-        for (const card of data.cards) {
+        tableHtml += `
+        <th>
+          Categories →
+          <br />
+          Cards ↓
+          <button class="associations-button-swap-axes" data-target="x-cards-y-categories">Swap axes</button>
+        </th>
+        `;
+        for (const category of data.categories) {
           tableHtml += `
-          <th class="card-text-cell">
-            <div class="card-text">${asTextContent(card.text)}</div>
+          <th class="x-axis-head-cell">
+            <div class="x-axis-head-text">${asTextContent(renamedCategories[category.name] || category.name)}</div>
           </th>
           `;
         }
         tableHtml += '</tr>';
-
+        for (const card of data.cards) {
+          tableHtml += `<tr>`;
+          tableHtml += `<th class="y-axis-head-text">${asTextContent(card.text)}</th>`;
+          for (const category of data.categories) {
+            const cardCount = data.cardCountsByCategory[category.name][card.text];
+            const cardPercentage = cardCount ? Math.round((cardCount / data.resultCount) * 100.0) : 0;
+            const weight = cardPercentage / 100.0;
+            const fontColor = weight > 0.5 ? '--light' : '--dark';
+            if (cardCount > 0) {
+              tableHtml += `
+              <td>
+                <div
+                  class="card-correlation"
+                  style="--weight: ${weight}; color: var(${fontColor});"
+                  title="${cardCount}/${data.resultCount} participants\n\nCard: ${asTextContent(card.text)}\n\nCategory: ${asTextContent(renamedCategories[category.name] || category.name)}"
+                >${cardPercentage}</div>
+              </td>
+              `;
+            }
+            else {
+              tableHtml += `<td><div class="card-correlation"></div></td>`;
+            }
+          }
+          tableHtml += '</tr>';
+        }
+        tableHtml += '</tbody>';
+        // Cards on X-axis, Categories on Y-axis
+        tableHtml += '<tbody class="x-cards-y-categories" style="display: none;">';
+        tableHtml += '<tr>';
+        tableHtml += `
+        <th>
+          Cards →
+          <br />
+          Categories ↓
+          <button class="associations-button-swap-axes" data-target="x-categories-y-cards">Swap axes</button>
+        </th>
+        `;
+        for (const card of data.cards) {
+          tableHtml += `
+          <th class="x-axis-head-cell">
+            <div class="x-axis-head-text">${asTextContent(card.text)}</div>
+          </th>
+          `;
+        }
+        tableHtml += '</tr>';
         for (const category of data.categories) {
-          tableHtml += '<tr>';
-          tableHtml += `<th class="category-name">${asTextContent(category.name)}</th>`;
+          tableHtml += `<tr>`;
+          tableHtml += `<th class="y-axis-head-text">${asTextContent(renamedCategories[category.name] || category.name)}</th>`;
           for (const card of data.cards) {
             const cardCount = data.cardCountsByCategory[category.name][card.text];
             const cardPercentage = cardCount ? Math.round((cardCount / data.resultCount) * 100.0) : 0;
             const weight = cardPercentage / 100.0;
             const fontColor = weight > 0.5 ? '--light' : '--dark';
             if (cardCount > 0) {
-              tableHtml += `<td><div class="card-correlation" style="--weight: ${weight}; color: var(${fontColor});" title="${cardCount}/${data.resultCount} participants">${cardPercentage}</div></td>`;
+              tableHtml += `
+              <td>
+                <div
+                  class="card-correlation"
+                  style="--weight: ${weight}; color: var(${fontColor});"
+                  title="${cardCount}/${data.resultCount} participants\n\nCard: ${asTextContent(card.text)}\n\nCategory: ${asTextContent(renamedCategories[category.name] || category.name)}"
+                >${cardPercentage}</div>
+              </td>
+              `;
             }
             else {
-              tableHtml += '<td><div class="card-correlation"></div></td>';
+              tableHtml += `<td><div class="card-correlation"></div></td>`;
             }
           }
           tableHtml += '</tr>';
         }
-        performance.mark('innerhtml-start');
+        tableHtml += '</tbody>';
         associationTable.innerHTML = tableHtml;
-        performance.mark('innerhtml-end');
-        performance.measure("innerhtml-start to end", 'innerhtml-start', 'innerhtml-end');
-        console.log(performance.getEntriesByType("measure"));
+      }
+
+      function associationTableSwapAxes(button) {
+        const target = button.getAttribute('data-target');
+        if (target == 'x-categories-y-cards') {
+          document.querySelector('.association-table .x-cards-y-categories').style.display = 'none';
+          document.querySelector('.association-table .x-categories-y-cards').style.display = '';
+        }
+        else {
+          document.querySelector('.association-table .x-categories-y-cards').style.display = 'none';
+          document.querySelector('.association-table .x-cards-y-categories').style.display = '';
+        }
       }
     </script>
   </body>
