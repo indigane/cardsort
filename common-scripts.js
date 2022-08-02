@@ -71,6 +71,9 @@ function loadFromQueryParameters() {
   if (params.get('allowCategoryEditing') !== null) {
     settings.allowCategoryEditing = Boolean(parseInt(params.get('allowCategoryEditing')));
   }
+  if (params.get('isRandomized') !== null) {
+    settings.isRandomized = Boolean(parseInt(params.get('isRandomized')));
+  }
   data[uncategorizedKey] = cardTexts;
   data[settingsFlagsKey] = saveSettings(settings);
   for (const categoryName of categories) {
