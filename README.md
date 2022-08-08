@@ -24,7 +24,23 @@ https://en.wikipedia.org/wiki/Card_sorting
 
 ## Advanced use
 
-You can pass query parameters to the card sorting page instead of going through the creation form.
+### Images
+
+Images can be added to the cards by typing `image:` and a link to the image.
+
+```
+image:https://domain.tld/image.jpg
+```
+
+Text can also be included before or after an image.
+
+```
+image:https://domain.tld/cat.jpg A photo of a cat
+```
+
+### Programmatic use
+
+Query parameters can be passed to the card sorting page instead of going through the creation form.
 
 All parameters are optional.
 
