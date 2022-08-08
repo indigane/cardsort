@@ -288,6 +288,7 @@
       function createCard(text, categoryGrid) {
         const targetGrid = categoryGrid || uncategorizedCardsGrid;
         const itemElement = document.importNode(cardTemplate.content.children[0], true);
+        const cardElement = itemElement.querySelector('.card');
         const hasImage = text.match(cardImageRegex);
         if (hasImage) {
           const [textBefore, imageUrl, textAfter] = text.split(cardImageRegex);
@@ -300,7 +301,7 @@
           }
           const imageElement = document.createElement('img');
           imageElement.className = 'card-image';
-          imageElement.onload = () => uncategorizedCardsGrid.refreshItems().layout();
+          imageElement.onload = () => targetGrid.refreshItems().layout();
           imageElement.src = imageUrl;
           cardChildElements.push(imageElement);
           if (textAfter.trim()) {
@@ -309,11 +310,12 @@
             span.appendChild(document.createTextNode(textAfter));
             cardChildElements.push(span);
           }
-          itemElement.querySelector('.card').replaceChildren(...cardChildElements);
+          cardElement.replaceChildren(...cardChildElements);
         }
         else {
-          itemElement.querySelector('.card').textContent = text;
+          cardElement.textContent = text;
         }
+        cardElement.setAttribute('data-text', text);
         targetGrid.show(
           targetGrid.add([itemElement], {
             active: false,
@@ -389,12 +391,12 @@
           }
           data[categoryName] = [];
           for (const cardElement of categoryElement.querySelectorAll('.card')) {
-            data[categoryName].push(cardElement.textContent);
+            data[categoryName].push(cardElement.getAttribute('data-text'));
           }
         }
         data[uncategorizedKey] = [];
         for (const cardElement of document.querySelectorAll('.uncategorized-cards .card')) {
-          data[uncategorizedKey].push(cardElement.textContent);
+          data[uncategorizedKey].push(cardElement.getAttribute('data-text'));
         }
         data[settingsFlagsKey] = saveSettings(settings);
       }
