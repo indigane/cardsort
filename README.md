@@ -1,6 +1,6 @@
 # Card Sort
 
-Card Sort is a **free** and open-source tool for conducting a virtual card sorting. It was built as a way to **quickly conduct a card sorting online**, without the need to sign up or pay for commercial solutions or self-host an open-source project.
+Card Sort is a **free** and open-source tool for conducting a virtual card sorting. It was built as a way to **quickly conduct a card sorting online**, without the need to sign up or subscribe to commercial solutions or self-host an open-source project.
 
 It works best when combined with other tooling. For example you could create a form with instructions, questionnaire and a link to the card sorting. You could also ask the participants to copy the results back into the form.
 
