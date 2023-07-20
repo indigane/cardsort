@@ -364,8 +364,11 @@
                 },
               });
               categoryGrid.on('dragEnd', function handleDragEnd(data) {
-                debouncedUpdateData();
                 categoriesGrid.refreshItems().layout();
+              });
+              categoryGrid.on('dragReleaseEnd', function handleDragReleaseEnd(data) {
+                categoryGrid.synchronize();
+                debouncedUpdateData();
               });
               cardGrids.push(categoryGrid);
               const cardTexts = data[name] || [];
