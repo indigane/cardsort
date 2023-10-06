@@ -106,6 +106,16 @@
         display: inline-block;
         margin-bottom: 4px;
       }
+      .card .btn-dup-card {
+        position: relative;
+        top: -33px;
+        right: 0px;
+        display: block;
+        color: gold;
+        border: none;
+        background: #ee6;
+        cursor: pointer;
+      }
       .muuri-item-placeholder .card {
         pointer-events: none;
         background: transparent;
@@ -171,7 +181,9 @@
     <template class="card-template">
       <div class="item">
         <div class="item-content">
-          <div class="card"></div>
+          <div class="card">
+            <button class="btn-dup-card" alt="Duplicate this card">➕</button>
+          </div>
         </div>
       </div>
     </template>
@@ -294,6 +306,8 @@
         const targetGrid = categoryGrid || uncategorizedCardsGrid;
         const itemElement = document.importNode(cardTemplate.content.children[0], true);
         const cardElement = itemElement.querySelector('.card');
+        const buttonDuplicateCard = cardElement.querySelector('.btn-dup-card');
+        buttonDuplicateCard.addEventListener('click', () => createCard(text));
         const hasImage = text.match(cardImageRegex);
         if (hasImage) {
           const [textBefore, imageUrl, textAfter] = text.split(cardImageRegex);
