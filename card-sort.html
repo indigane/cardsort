@@ -198,7 +198,6 @@
       const buttonExportResult = document.querySelector('.btn-export-result');
       const cardTemplate = document.querySelector('.card-template');
       const categoryTemplate = document.querySelector('.category-template');
-      const cardImageRegex = /\s*image\s*:\s*((?:https?|data):\S+)/i;
       const cardImageRegex = /\s*image\s*:\s*((?:https?:|data:|\.{0,2}\/)\S+)/i;
       const uncategorizedCardsGrid = new Muuri('.uncategorized-cards .grid', {
         dragEnabled: true,
