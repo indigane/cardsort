@@ -318,6 +318,8 @@
             input.setAttribute("placeholder","Type a content");
             input.value = textBefore;
             input.addEventListener('input', function handleInput() {
+              text = this.value + imageURL + textAfter;
+              cardElement.setAttribute('data-text', text);
               debouncedUpdateData();
             });
             cardChildElements.appendChild(input);
@@ -333,6 +335,8 @@
             input.setAttribute("placeholder","Type a content");
             input.value = textAfter;
             input.addEventListener('input', function handleInput() {
+              text = textBefore + imageURL + this.value;
+              cardElement.setAttribute('data-text', text);
               debouncedUpdateData();
             });
             cardChildElements.appendChild(input);
@@ -345,6 +349,8 @@
           input.setAttribute("placeholder","Type a content");
           input.value = text;
           input.addEventListener('input', function handleInput() {
+              text = this.value;
+              cardElement.setAttribute('data-text', text);
             debouncedUpdateData();
           });
           cardElement.appendChild(input);
