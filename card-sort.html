@@ -92,12 +92,17 @@
         background: #ee6;
         box-shadow: 0 2px 2px rgba(172, 121, 0, 0.58);
         cursor: grab;
+        border-top: 30px solid gold;
+      }
+      .card-text {
+        background: #ee6;
+        border: none;
       }
       .card .card-image {
         width: 100%;
         border-radius: 4px;
       }
-      .card .card-image-text:first-child {
+      .card .card-text:first-child {
         display: inline-block;
         margin-bottom: 4px;
       }
@@ -292,28 +297,43 @@
         const hasImage = text.match(cardImageRegex);
         if (hasImage) {
           const [textBefore, imageUrl, textAfter] = text.split(cardImageRegex);
-          const cardChildElements = [];
+          const cardChildElements = document.createDocumentFragment();
           if (textBefore.trim()) {
-            const span = document.createElement('span');
-            span.className = 'card-image-text';
-            span.appendChild(document.createTextNode(textBefore));
-            cardChildElements.push(span);
+            const input = document.createElement('input');
+            input.className = 'card-text';
+            input.setAttribute("placeholder","Type a content");
+            input.value = textBefore;
+            input.addEventListener('input', function handleInput() {
+              debouncedUpdateData();
+            });
+            cardChildElements.appendChild(input);
           }
           const imageElement = document.createElement('img');
           imageElement.className = 'card-image';
           imageElement.onload = () => targetGrid.refreshItems().layout();
           imageElement.src = imageUrl;
-          cardChildElements.push(imageElement);
+          cardChildElements.appendChild(imageElement);
           if (textAfter.trim()) {
-            const span = document.createElement('span');
-            span.className = 'card-image-text';
-            span.appendChild(document.createTextNode(textAfter));
-            cardChildElements.push(span);
+            const input = document.createElement('input');
+            input.className = 'card-text';
+            input.setAttribute("placeholder","Type a content");
+            input.value = textAfter;
+            input.addEventListener('input', function handleInput() {
+              debouncedUpdateData();
+            });
+            cardChildElements.appendChild(input);
           }
-          cardElement.replaceChildren(...cardChildElements);
+          cardElement.appendChild(cardChildElements);
         }
         else {
-          cardElement.textContent = text;
+          const input = document.createElement('input');
+          input.className = 'card-text';
+          input.setAttribute("placeholder","Type a content");
+          input.value = text;
+          input.addEventListener('input', function handleInput() {
+            debouncedUpdateData();
+          });
+          cardElement.appendChild(input);
         }
         cardElement.setAttribute('data-text', text);
         targetGrid.show(
