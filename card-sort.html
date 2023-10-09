@@ -321,6 +321,7 @@
         if (hasImage) {
           const [textBefore, imageUrl, textAfter] = text.split(cardImageRegex);
           const [textBeforeOriginal, imageUrlOriginal, textAfterOriginal] = text.split(cardImageRegex);
+          var textBeforeEditable = textBeforeOriginal;
           const cardChildElements = document.createDocumentFragment();
           if (textBefore.trim()) {
             const input = document.createElement('input');
@@ -346,7 +347,7 @@
                 originalTextBefore.innerHTML = textBeforeOriginal;
                 uncategorizedCardsGrid.refreshItems().layout();
                 categoriesGrid.refreshItems().layout();
-                textBeforeOriginal = this.value;
+                textBeforeEditable = this.value;
               }
               // fin
               debouncedUpdateData();
@@ -366,7 +367,7 @@
             if (settings.allowCardEditing === false)
               input.setAttribute("disabled","");
             input.addEventListener('input', function handleInput() {
-              text = textBeforeOriginal + " image:" + imageUrlOriginal + " " + this.value;
+              text = textBeforeEditable + " image:" + imageUrlOriginal + " " + this.value;
               cardElement.setAttribute('data-text', text);
               //
               const originalTextAfter = cardElement.querySelector('div.show-original.after') || document.createElement("div");
