@@ -116,6 +116,11 @@
         background: #ee6;
         cursor: pointer;
       }
+      .card .show-original {
+        text-decoration-line: line-through;
+        font-size: 70%;
+        color: darkgrey;
+      }
       .muuri-item-placeholder .card {
         pointer-events: none;
         background: transparent;
@@ -315,6 +320,7 @@
         const hasImage = text.match(cardImageRegex);
         if (hasImage) {
           const [textBefore, imageUrl, textAfter] = text.split(cardImageRegex);
+          const [textBeforeOriginal, imageUrlOriginal, textAfterOriginal] = text.split(cardImageRegex);
           const cardChildElements = document.createDocumentFragment();
           if (textBefore.trim()) {
             const input = document.createElement('input');
@@ -324,8 +330,25 @@
             if (settings.allowCardEditing === false)
               input.setAttribute("disabled","");
             input.addEventListener('input', function handleInput() {
-              text = this.value + imageURL + textAfter;
+              text = this.value + " image:" + imageUrlOriginal + textAfterOriginal;
               cardElement.setAttribute('data-text', text);
+              // Mes mods
+              const originalTextBefore = cardElement.querySelector('div.show-original.before') || document.createElement("div");
+              if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
+                 if (originalTextBefore)
+                  originalTextBefore.remove();
+                  uncategorizedCardsGrid.refreshItems().layout();
+                  categoriesGrid.refreshItems().layout();
+              } else {
+                originalTextBefore.classList.add("show-original");
+                originalTextBefore.classList.add("before");
+                input.insertAdjacentElement('beforebegin', originalTextBefore);
+                originalTextBefore.innerHTML = textBeforeOriginal;
+                uncategorizedCardsGrid.refreshItems().layout();
+                categoriesGrid.refreshItems().layout();
+                textBeforeOriginal = this.value;
+              }
+              // fin
               debouncedUpdateData();
             });
             cardChildElements.appendChild(input);
@@ -343,8 +366,23 @@
             if (settings.allowCardEditing === false)
               input.setAttribute("disabled","");
             input.addEventListener('input', function handleInput() {
-              text = textBefore + imageURL + this.value;
+              text = textBeforeOriginal + " image:" + imageUrlOriginal + " " + this.value;
               cardElement.setAttribute('data-text', text);
+              //
+              const originalTextAfter = cardElement.querySelector('div.show-original.after') || document.createElement("div");
+              if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
+                 if (originalTextAfter)
+                  originalTextAfter.remove();
+                  uncategorizedCardsGrid.refreshItems().layout();
+                  categoriesGrid.refreshItems().layout();
+              } else {
+                originalTextAfter.classList.add("show-original");
+                originalTextAfter.classList.add("after");
+                input.insertAdjacentElement('afterend', originalTextAfter);
+                originalTextAfter.innerHTML = textAfterOriginal;
+                uncategorizedCardsGrid.refreshItems().layout();
+                categoriesGrid.refreshItems().layout();
+              }
               debouncedUpdateData();
             });
             cardChildElements.appendChild(input);
@@ -361,11 +399,25 @@
           input.addEventListener('input', function handleInput() {
               text = this.value;
               cardElement.setAttribute('data-text', text);
+              const originalText = cardElement.querySelector('div.show-original') || document.createElement("div");
+              if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
+                 if (originalText)
+                  originalText.remove();
+                  uncategorizedCardsGrid.refreshItems().layout();
+                  categoriesGrid.refreshItems().layout();
+              } else {
+                originalText.classList.add("show-original");
+                input.insertAdjacentElement('beforebegin', originalText);
+                originalText.innerHTML = cardElement.getAttribute('data-original-text');
+                uncategorizedCardsGrid.refreshItems().layout();
+                categoriesGrid.refreshItems().layout();
+              }
             debouncedUpdateData();
           });
           cardElement.appendChild(input);
         }
         cardElement.setAttribute('data-text', text);
+        cardElement.setAttribute('data-original-text', text);
         targetGrid.show(
           targetGrid.add([itemElement], {
             active: false,
@@ -444,12 +496,28 @@
           }
           data[categoryName] = [];
           for (const cardElement of categoryElement.querySelectorAll('.card')) {
-            data[categoryName].push(cardElement.getAttribute('data-text'));
+            if (cardElement.getAttribute('data-text') === cardElement.getAttribute('data-original-text')) {
+              data[categoryName].push(cardElement.getAttribute('data-text'));
+            } else {
+              data[categoryName].push("-" +
+                              cardElement.getAttribute('data-original-text') +
+                              " +" +
+                              cardElement.getAttribute('data-text')
+                              );
+            }
           }
         }
         data[uncategorizedKey] = [];
         for (const cardElement of document.querySelectorAll('.uncategorized-cards .card')) {
-          data[uncategorizedKey].push(cardElement.getAttribute('data-text'));
+            if (cardElement.getAttribute('data-text') === cardElement.getAttribute('data-original-text')) {
+              data[uncategorizedKey].push(cardElement.getAttribute('data-text'));
+            } else {
+              data[uncategorizedKey].push("-" +
+                              cardElement.getAttribute('data-original-text') +
+                              " +" +
+                              cardElement.getAttribute('data-text')
+                              );
+            }
         }
         data[settingsFlagsKey] = saveSettings(settings);
       }
