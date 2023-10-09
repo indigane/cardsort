@@ -307,7 +307,11 @@
         const itemElement = document.importNode(cardTemplate.content.children[0], true);
         const cardElement = itemElement.querySelector('.card');
         const buttonDuplicateCard = cardElement.querySelector('.btn-dup-card');
-        buttonDuplicateCard.addEventListener('click', () => createCard(text));
+        if (settings.allowCardDup === true) {
+          buttonDuplicateCard.addEventListener('click', () => createCard(text));
+        } else {
+          buttonDuplicateCard.remove();
+        }
         const hasImage = text.match(cardImageRegex);
         if (hasImage) {
           const [textBefore, imageUrl, textAfter] = text.split(cardImageRegex);
@@ -317,6 +321,8 @@
             input.className = 'card-text';
             input.setAttribute("placeholder","Type a content");
             input.value = textBefore;
+            if (settings.allowCardEditing === false)
+              input.setAttribute("disabled","");
             input.addEventListener('input', function handleInput() {
               text = this.value + imageURL + textAfter;
               cardElement.setAttribute('data-text', text);
@@ -334,6 +340,8 @@
             input.className = 'card-text';
             input.setAttribute("placeholder","Type a content");
             input.value = textAfter;
+            if (settings.allowCardEditing === false)
+              input.setAttribute("disabled","");
             input.addEventListener('input', function handleInput() {
               text = textBefore + imageURL + this.value;
               cardElement.setAttribute('data-text', text);
@@ -348,6 +356,8 @@
           input.className = 'card-text';
           input.setAttribute("placeholder","Type a content");
           input.value = text;
+          if (settings.allowCardEditing === false)
+            input.setAttribute("disabled","");
           input.addEventListener('input', function handleInput() {
               text = this.value;
               cardElement.setAttribute('data-text', text);
