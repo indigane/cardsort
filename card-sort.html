@@ -307,7 +307,6 @@
           isDeferredResize = false;
         });
       }
-
       function createCard(text, categoryGrid) {
         const targetGrid = categoryGrid || uncategorizedCardsGrid;
         const itemElement = document.importNode(cardTemplate.content.children[0], true);
@@ -320,7 +319,6 @@
         }
         const hasImage = text.match(cardImageRegex);
         const editedCard = text.match(editedCardRegex);
-        // si ça matche `--- *** +++ ***` c'est qu'on a un truc à traiter → regex.
         if (editedCard) {
           text = editedCard[2];
           cardElement.setAttribute('data-original-text',editedCard[1]);
@@ -343,28 +341,15 @@
             imageElement.insertAdjacentElement('beforebegin',input);
             if (settings.allowCardEditing === false) {
               input.setAttribute("disabled","");
-            }
-            input.addEventListener('input', function handleInput() {
-              text = this.value + " image:" + imageUrlOriginal + textAfterOriginal;
-              cardElement.setAttribute('data-text', text);
-              debouncedUpdateData();
-            });
-            const originalTextBefore = cardElement.querySelector('div.show-original.before') || document.createElement("div");
-            if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
-                if (originalTextBefore) {
-                originalTextBefore.remove();
-              }
-              uncategorizedCardsGrid.refreshItems().layout();
-              categoriesGrid.refreshItems().layout();
             } else {
-              originalTextBefore.classList.add("show-original");
-              originalTextBefore.classList.add("before");
-              originalTextBefore.innerHTML = textBeforeOriginal;
-              input.insertAdjacentElement('beforebegin',originalTextBefore);
-              uncategorizedCardsGrid.refreshItems().layout();
-              categoriesGrid.refreshItems().layout();
-              textBeforeEditable = input.value;
+              input.addEventListener('input', function handleInput() {
+                text = this.value + " image:" + imageUrlOriginal + textAfterOriginal;
+                cardElement.setAttribute('data-text', text);
+                textBeforeEditable = showCardOldText(cardElement, this, textBeforeOriginal, 'before', 'beforebegin');
+                debouncedUpdateData();
+              });
             }
+            textBeforeEditable = showCardOldText(cardElement, input, textBeforeOriginal, 'before', 'beforebegin');
           }
           if (textAfter.trim()) {
             const input = document.createElement('input');
@@ -372,26 +357,16 @@
             input.setAttribute("placeholder","Type a content");
             input.value = textAfter;
             imageElement.insertAdjacentElement('afterend',input);
-            if (settings.allowCardEditing === false)
+            if (settings.allowCardEditing === false){
               input.setAttribute("disabled","");
-            input.addEventListener('input', function handleInput() {
-              text = textBeforeEditable + " image:" + imageUrlOriginal + " " + this.value;
-              cardElement.setAttribute('data-text', text);
-              debouncedUpdateData();
-            });
-            const originalTextAfter = cardElement.querySelector('div.show-original.after') || document.createElement("div");
-            if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
-                if (originalTextAfter)
-                originalTextAfter.remove();
-                uncategorizedCardsGrid.refreshItems().layout();
-                categoriesGrid.refreshItems().layout();
             } else {
-              originalTextAfter.classList.add("show-original");
-              originalTextAfter.classList.add("after");
-              input.insertAdjacentElement('afterend', originalTextAfter);
-              originalTextAfter.innerHTML = textAfterOriginal;
-              uncategorizedCardsGrid.refreshItems().layout();
-              categoriesGrid.refreshItems().layout();
+              input.addEventListener('input', function handleInput() {
+                text = textBeforeEditable + " image:" + imageUrlOriginal + " " + this.value;
+                cardElement.setAttribute('data-text', text);
+                showCardOldText(cardElement, input, textAfterOriginal, 'after', 'afterend');
+                debouncedUpdateData();
+              });
+              showCardOldText(cardElement, input, textAfterOriginal, 'after', 'afterend');
             }
           }
         }
@@ -595,6 +570,20 @@
         else {
           prompt('Your browser does not support clipboard. You may try copying the content from below.', serializedData);
         }
+      }
+      function showCardOldText(cardElement, input, originalText, cssClass, position) {
+        const divOriginalText = cardElement.querySelector('div.show-original.' + cssClass) || document.createElement("div");
+        if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
+          if (originalText) divOriginalText.remove();
+        } else {
+          divOriginalText.classList.add("show-original");
+          divOriginalText.classList.add(cssClass);
+          divOriginalText.innerHTML = originalText;
+          input.insertAdjacentElement(position,divOriginalText);
+        }
+        uncategorizedCardsGrid.refreshItems().layout();
+        categoriesGrid.refreshItems().layout();
+        return  input.value ;
       }
     </script>
   </body>
