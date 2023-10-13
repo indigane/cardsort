@@ -321,7 +321,7 @@
         const editedCard = text.match(editedCardRegex);
         if (editedCard) {
           text = editedCard[2];
-          cardElement.setAttribute('data-original-text',editedCard[1]);
+          cardElement.setAttribute('data-original-text', editedCard[1]);
         }
         if (hasImage) {
           const [textBefore, imageUrl, textAfter] = text.split(cardImageRegex);
@@ -336,11 +336,11 @@
           if (textBefore.trim()) {
             const input = document.createElement('input');
             input.className = 'card-text';
-            input.setAttribute("placeholder","Type a content");
+            input.setAttribute("placeholder", "Type a content");
             input.value = textBefore;
-            imageElement.insertAdjacentElement('beforebegin',input);
+            imageElement.insertAdjacentElement('beforebegin', input);
             if (settings.allowCardEditing === false) {
-              input.setAttribute("disabled","");
+              input.setAttribute("disabled", "");
             } else {
               input.addEventListener('input', function handleInput() {
                 text = this.value + " image:" + imageUrlOriginal + textAfterOriginal;
@@ -354,11 +354,11 @@
           if (textAfter.trim()) {
             const input = document.createElement('input');
             input.className = 'card-text';
-            input.setAttribute("placeholder","Type a content");
+            input.setAttribute("placeholder", "Type a content");
             input.value = textAfter;
-            imageElement.insertAdjacentElement('afterend',input);
-            if (settings.allowCardEditing === false){
-              input.setAttribute("disabled","");
+            imageElement.insertAdjacentElement('afterend', input);
+            if (settings.allowCardEditing === false) {
+              input.setAttribute("disabled", "");
             } else {
               input.addEventListener('input', function handleInput() {
                 text = textBeforeEditable + " image:" + imageUrlOriginal + " " + this.value;
@@ -373,7 +373,7 @@
         else {
           const input = document.createElement('input');
           input.className = 'card-text';
-          input.setAttribute("placeholder","Type a content");
+          input.setAttribute("placeholder", "Type a content");
           cardElement.appendChild(input);
           if (editedCard) {
             const oldText = document.createElement("div");
@@ -385,23 +385,23 @@
           }
           input.value = text;
           if (settings.allowCardEditing === false)
-            input.setAttribute("disabled","");
-            input.addEventListener('input', function handleInput() {
-              text = this.value;
-              cardElement.setAttribute('data-text', text);
-              const originalText = cardElement.querySelector('div.show-original') || document.createElement("div");
-              if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
-                 if (originalText)
-                  originalText.remove();
-                  uncategorizedCardsGrid.refreshItems().layout();
-                  categoriesGrid.refreshItems().layout();
-              } else {
-                originalText.classList.add("show-original");
-                input.insertAdjacentElement('beforebegin', originalText);
-                originalText.innerHTML = cardElement.getAttribute('data-original-text');
-                uncategorizedCardsGrid.refreshItems().layout();
-                categoriesGrid.refreshItems().layout();
-              }
+            input.setAttribute("disabled", "");
+          input.addEventListener('input', function handleInput() {
+            text = this.value;
+            cardElement.setAttribute('data-text', text);
+            const originalText = cardElement.querySelector('div.show-original') || document.createElement("div");
+            if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
+              if (originalText)
+                originalText.remove();
+              uncategorizedCardsGrid.refreshItems().layout();
+              categoriesGrid.refreshItems().layout();
+            } else {
+              originalText.classList.add("show-original");
+              input.insertAdjacentElement('beforebegin', originalText);
+              originalText.innerHTML = cardElement.getAttribute('data-original-text');
+              uncategorizedCardsGrid.refreshItems().layout();
+              categoriesGrid.refreshItems().layout();
+            }
             debouncedUpdateData();
           });
         }
@@ -572,19 +572,19 @@
         }
       }
       function showCardOldText(cardElement, input, originalText, cssClass, position) {
-        const divOriginalText = cardElement.querySelector('div.show-original.' + cssClass) || document.createElement("div");
-        if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
-          if (originalText) divOriginalText.remove();
-        } else {
-          divOriginalText.classList.add("show-original");
-          divOriginalText.classList.add(cssClass);
-          divOriginalText.innerHTML = originalText;
-          input.insertAdjacentElement(position,divOriginalText);
+          const divOriginalText = cardElement.querySelector('div.show-original.' + cssClass) || document.createElement("div");
+          if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
+            if (originalText) divOriginalText.remove();
+          } else {
+            divOriginalText.classList.add("show-original");
+            divOriginalText.classList.add(cssClass);
+            divOriginalText.innerHTML = originalText;
+            input.insertAdjacentElement(position, divOriginalText);
+          }
+          uncategorizedCardsGrid.refreshItems().layout();
+          categoriesGrid.refreshItems().layout();
+          return input.value;
         }
-        uncategorizedCardsGrid.refreshItems().layout();
-        categoriesGrid.refreshItems().layout();
-        return  input.value ;
-      }
     </script>
   </body>
 </html>
