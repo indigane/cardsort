@@ -92,14 +92,34 @@
         background: #ee6;
         box-shadow: 0 2px 2px rgba(172, 121, 0, 0.58);
         cursor: grab;
+        border-top: 30px solid gold;
+      }
+      .card-text {
+        background: #ee6;
+        border: none;
       }
       .card .card-image {
         width: 100%;
         border-radius: 4px;
       }
-      .card .card-image-text:first-child {
+      .card .card-text:first-child {
         display: inline-block;
         margin-bottom: 4px;
+      }
+      .card .btn-dup-card {
+        position: relative;
+        top: -33px;
+        right: 0px;
+        display: block;
+        color: gold;
+        border: none;
+        background: #ee6;
+        cursor: pointer;
+      }
+      .card .show-original {
+        text-decoration-line: line-through;
+        font-size: 70%;
+        color: darkgrey;
       }
       .muuri-item-placeholder .card {
         pointer-events: none;
@@ -166,7 +186,9 @@
     <template class="card-template">
       <div class="item">
         <div class="item-content">
-          <div class="card"></div>
+          <div class="card">
+            <button class="btn-dup-card" title="Duplicate this card">➕</button>
+          </div>
         </div>
       </div>
     </template>
@@ -198,7 +220,8 @@
       const buttonExportResult = document.querySelector('.btn-export-result');
       const cardTemplate = document.querySelector('.card-template');
       const categoryTemplate = document.querySelector('.category-template');
-      const cardImageRegex = /\s*image\s*:\s*((?:https?|data):\S+)/i;
+      const cardImageRegex = /\s*image\s*:\s*((?:https?:|data:|\.{0,2}\/)\S+)/i;
+      const editedCardRegex = /^--- (.*?) \+\+\+ (.*?)$/;
       const uncategorizedCardsGrid = new Muuri('.uncategorized-cards .grid', {
         dragEnabled: true,
         dragSort: () => cardGrids,
@@ -284,38 +307,106 @@
           isDeferredResize = false;
         });
       }
-
       function createCard(text, categoryGrid) {
         const targetGrid = categoryGrid || uncategorizedCardsGrid;
         const itemElement = document.importNode(cardTemplate.content.children[0], true);
         const cardElement = itemElement.querySelector('.card');
+        const buttonDuplicateCard = cardElement.querySelector('.btn-dup-card');
+        if (settings.allowCardDup === true) {
+          buttonDuplicateCard.addEventListener('click', () => createCard(text));
+        } else {
+          buttonDuplicateCard.remove();
+        }
         const hasImage = text.match(cardImageRegex);
+        const editedCard = text.match(editedCardRegex);
+        if (editedCard) {
+          text = editedCard[2];
+          cardElement.setAttribute('data-original-text', editedCard[1]);
+        }
         if (hasImage) {
           const [textBefore, imageUrl, textAfter] = text.split(cardImageRegex);
-          const cardChildElements = [];
-          if (textBefore.trim()) {
-            const span = document.createElement('span');
-            span.className = 'card-image-text';
-            span.appendChild(document.createTextNode(textBefore));
-            cardChildElements.push(span);
-          }
+          var originalOrText = cardElement.getAttribute('data-original-text') || text;
+          const [textBeforeOriginal, imageUrlOriginal, textAfterOriginal] = originalOrText.split(cardImageRegex);
+          var textBeforeEditable = textBeforeOriginal;
           const imageElement = document.createElement('img');
           imageElement.className = 'card-image';
           imageElement.onload = () => targetGrid.refreshItems().layout();
           imageElement.src = imageUrl;
-          cardChildElements.push(imageElement);
-          if (textAfter.trim()) {
-            const span = document.createElement('span');
-            span.className = 'card-image-text';
-            span.appendChild(document.createTextNode(textAfter));
-            cardChildElements.push(span);
+          cardElement.appendChild(imageElement);
+          if (textBefore.trim()) {
+            const input = document.createElement('input');
+            input.className = 'card-text';
+            input.setAttribute("placeholder", "Type a content");
+            input.value = textBefore;
+            imageElement.insertAdjacentElement('beforebegin', input);
+            if (settings.allowCardEditing === false) {
+              input.setAttribute("disabled", "");
+            } else {
+              input.addEventListener('input', function handleInput() {
+                text = this.value + " image:" + imageUrlOriginal + textAfterOriginal;
+                cardElement.setAttribute('data-text', text);
+                textBeforeEditable = showCardOldText(cardElement, this, textBeforeOriginal, 'before', 'beforebegin');
+                debouncedUpdateData();
+              });
+            }
+            textBeforeEditable = showCardOldText(cardElement, input, textBeforeOriginal, 'before', 'beforebegin');
           }
-          cardElement.replaceChildren(...cardChildElements);
+          if (textAfter.trim()) {
+            const input = document.createElement('input');
+            input.className = 'card-text';
+            input.setAttribute("placeholder", "Type a content");
+            input.value = textAfter;
+            imageElement.insertAdjacentElement('afterend', input);
+            if (settings.allowCardEditing === false) {
+              input.setAttribute("disabled", "");
+            } else {
+              input.addEventListener('input', function handleInput() {
+                text = textBeforeEditable + " image:" + imageUrlOriginal + " " + this.value;
+                cardElement.setAttribute('data-text', text);
+                showCardOldText(cardElement, input, textAfterOriginal, 'after', 'afterend');
+                debouncedUpdateData();
+              });
+              showCardOldText(cardElement, input, textAfterOriginal, 'after', 'afterend');
+            }
+          }
         }
         else {
-          cardElement.textContent = text;
+          const input = document.createElement('input');
+          input.className = 'card-text';
+          input.setAttribute("placeholder", "Type a content");
+          cardElement.appendChild(input);
+          if (editedCard) {
+            const oldText = document.createElement("div");
+            oldText.classList.add("show-original");
+            oldText.innerHTML = editedCard[1];
+            input.insertAdjacentElement('beforebegin', oldText);
+            uncategorizedCardsGrid.refreshItems().layout();
+            categoriesGrid.refreshItems().layout();
+          }
+          input.value = text;
+          if (settings.allowCardEditing === false)
+            input.setAttribute("disabled", "");
+          input.addEventListener('input', function handleInput() {
+            text = this.value;
+            cardElement.setAttribute('data-text', text);
+            const originalText = cardElement.querySelector('div.show-original') || document.createElement("div");
+            if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
+              if (originalText)
+                originalText.remove();
+              uncategorizedCardsGrid.refreshItems().layout();
+              categoriesGrid.refreshItems().layout();
+            } else {
+              originalText.classList.add("show-original");
+              input.insertAdjacentElement('beforebegin', originalText);
+              originalText.innerHTML = cardElement.getAttribute('data-original-text');
+              uncategorizedCardsGrid.refreshItems().layout();
+              categoriesGrid.refreshItems().layout();
+            }
+            debouncedUpdateData();
+          });
         }
         cardElement.setAttribute('data-text', text);
+        cardElement.setAttribute('data-original-text', cardElement.getAttribute('data-original-text') || text);
         targetGrid.show(
           targetGrid.add([itemElement], {
             active: false,
@@ -394,12 +485,28 @@
           }
           data[categoryName] = [];
           for (const cardElement of categoryElement.querySelectorAll('.card')) {
-            data[categoryName].push(cardElement.getAttribute('data-text'));
+            if (cardElement.getAttribute('data-text') === cardElement.getAttribute('data-original-text')) {
+              data[categoryName].push(cardElement.getAttribute('data-text'));
+            } else {
+              data[categoryName].push("--- " +
+                              cardElement.getAttribute('data-original-text') +
+                              " +++ " +
+                              cardElement.getAttribute('data-text')
+                              );
+            }
           }
         }
         data[uncategorizedKey] = [];
         for (const cardElement of document.querySelectorAll('.uncategorized-cards .card')) {
-          data[uncategorizedKey].push(cardElement.getAttribute('data-text'));
+            if (cardElement.getAttribute('data-text') === cardElement.getAttribute('data-original-text')) {
+              data[uncategorizedKey].push(cardElement.getAttribute('data-text'));
+            } else {
+              data[uncategorizedKey].push("--- " +
+                              cardElement.getAttribute('data-original-text') +
+                              " +++ " +
+                              cardElement.getAttribute('data-text')
+                              );
+            }
         }
         data[settingsFlagsKey] = saveSettings(settings);
       }
@@ -464,6 +571,20 @@
           prompt('Your browser does not support clipboard. You may try copying the content from below.', serializedData);
         }
       }
+      function showCardOldText(cardElement, input, originalText, cssClass, position) {
+          const divOriginalText = cardElement.querySelector('div.show-original.' + cssClass) || document.createElement("div");
+          if (cardElement.getAttribute('data-text') == cardElement.getAttribute('data-original-text')) {
+            if (originalText) divOriginalText.remove();
+          } else {
+            divOriginalText.classList.add("show-original");
+            divOriginalText.classList.add(cssClass);
+            divOriginalText.innerHTML = originalText;
+            input.insertAdjacentElement(position, divOriginalText);
+          }
+          uncategorizedCardsGrid.refreshItems().layout();
+          categoriesGrid.refreshItems().layout();
+          return input.value;
+        }
     </script>
   </body>
 </html>

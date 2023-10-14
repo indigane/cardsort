@@ -3,8 +3,12 @@ const settingsFlagsKey = '?';
 const settingsFlagsEnum = {
   allowCategoryEditing: 1,
   isRandomized: 2,
+  allowCardEditing: 4,
+  allowCardDup: 8,
 };
 const settingsDefaults = {
+  allowCardEditing: false,
+  allowCardDup: false,
   allowCategoryEditing: true,
   isRandomized: false,
 };
@@ -73,6 +77,12 @@ function loadFromQueryParameters() {
   }
   if (params.get('isRandomized') !== null) {
     settings.isRandomized = Boolean(parseInt(params.get('isRandomized')));
+  }
+  if (params.get('allowCardEditing') !== null) {
+    settings.allowCardEditing = Boolean(parseInt(params.get('allowCardEditing')));
+  }
+  if (params.get('allowCardDup') !== null) {
+    settings.allowCardDup = Boolean(parseInt(params.get('allowCardDup')));
   }
   data[uncategorizedKey] = cardTexts;
   data[settingsFlagsKey] = saveSettings(settings);

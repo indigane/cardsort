@@ -33,6 +33,7 @@
       }
       label {
         cursor: pointer;
+        display: block;
       }
       button {
         margin-top: 1em;
@@ -70,6 +71,14 @@
           <input class="is-randomized-checkbox" type="checkbox" />
           <span>Randomize card order for each participant</span>
         </label>
+        <label>
+          <input class="card-editing-checkbox" type="checkbox" />
+          <span>Allow card editing</span>
+        </label>
+        <label>
+          <input class="card-duplicate-checkbox" type="checkbox" />
+          <span>Allow card duplication</span>
+        </label>
       </div>
       <div>
         <hr />
@@ -92,6 +101,8 @@
     <script>
       const cardTextInput = document.querySelector('.card-text-input');
       const categoryNameInput = document.querySelector('.category-name-input');
+      const cardEditingCheckbox = document.querySelector('.card-editing-checkbox');
+      const cardDupCheckbox = document.querySelector('.card-duplicate-checkbox');
       const categoryEditingCheckbox = document.querySelector('.category-editing-checkbox');
       const isRandomizedCheckbox = document.querySelector('.is-randomized-checkbox');
       const linkContainer = document.querySelector('.link-container');
@@ -110,6 +121,8 @@
         const settings = {};
         settings.allowCategoryEditing = categoryEditingCheckbox.checked;
         settings.isRandomized = isRandomizedCheckbox.checked;
+        settings.allowCardEditing = cardEditingCheckbox.checked;
+        settings.allowCardDup = cardDupCheckbox.checked;
         data[settingsFlagsKey] = saveSettings(settings);
         const dataString = await saveToString(data);
         const baseUrl = window.location.href.replace(regexRemoveBasenameFromUrl, '/');
