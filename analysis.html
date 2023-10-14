@@ -175,6 +175,11 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .category-refinement .card-text .oldtext {
+        text-decoration-line: line-through;
+        font-size: 80%;
+        color: darkblue;
+      }
       /* Association table */
       .associations {
         position: relative;
@@ -230,6 +235,12 @@
         text-align: right;
         white-space: nowrap;
         border-bottom: var(--border-styles);
+      }
+      .association-table .x-axis-head-text .oldtext,
+      .association-table .y-axis-head-text .oldtext {
+        text-decoration-line: line-through;
+        font-size: 70%;
+        color: darkgrey;
       }
       .association-table .card-correlation {
         display: flex;
@@ -307,6 +318,7 @@
       let loadedResults = [];
       resultsInput.addEventListener('input', handleResultsInput);
       const jsonSplitRegex = /\}[^{}]*\{/;
+      const editedCardRegex = /^--- (.*?) \+\+\+ (.*?)$/;
 
       async function handleResultsInput() {
         const text = resultsInput.value;
@@ -540,7 +552,7 @@
             const cardPercentage = Math.round((cardCount / data.resultCount) * 100.0);
             const weight = (cardPercentage / 100.0) / 2.0;
             cardElement.style.setProperty('--weight', weight);
-            cardElement.querySelector('.card-text').textContent = cardText;
+            cardElement.querySelector('.card-text').innerHTML = cardText.replace(editedCardRegex,"<div class='oldtext'>$1</div><div class='newtext'>$2</div>");
             cardElement.querySelector('.card-correlation').textContent = `${cardPercentage}%`;
             cardElement.querySelector('.card-correlation').title = `${cardCount}/${data.resultCount} participants`;
             cardElements.push(cardElement);
@@ -694,7 +706,8 @@
         tableHtml += '</tr>';
         for (const card of data.cards) {
           tableHtml += `<tr>`;
-          tableHtml += `<th class="y-axis-head-text">${asTextContent(card.text)}</th>`;
+          const thText = asTextContent(card.text).replace(editedCardRegex,"<div class='oldtext'>$1</div><div class='newtext'>$2</div>");
+          tableHtml += `<th class="y-axis-head-text">${thText}</th>`;
           for (const category of data.categories) {
             const cardCount = data.cardCountsByCategory[category.name][card.text];
             const cardPercentage = cardCount ? Math.round((cardCount / data.resultCount) * 100.0) : 0;
@@ -730,9 +743,10 @@
         </th>
         `;
         for (const card of data.cards) {
+          const thText = asTextContent(card.text).replace(editedCardRegex,"<div class='oldtext'>$1</div><div class='newtext'>$2</div>");
           tableHtml += `
           <th class="x-axis-head-cell">
-            <div class="x-axis-head-text">${asTextContent(card.text)}</div>
+            <div class="x-axis-head-text">${thText}</div>
           </th>
           `;
         }
